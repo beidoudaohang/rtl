@@ -1,0 +1,52 @@
+
+##	===============================================================================================
+##	breath_led
+##	===============================================================================================
+
+
+# ref 1 pin location ------------------------------------------------------------------------------
+#----ref clk reset --------------------------------------------------------------------------------
+NET  "sys_clk"									LOC = "AF14"	| IOSTANDARD = LVCMOS33;
+#NET  "sys_rst"									LOC = "F26" 	| IOSTANDARD = LVCMOS33;
+
+#----ref FPGA test --------------------------------------------------------------------------------
+#Gate-A	G8		IO_L5P_0						FPGA_BANK0_LED		BANK0测试LED输出
+NET "ov_fpga_led[0]" LOC = G8	| IOSTANDARD = LVCMOS33;
+#Gate-D	N18		IO_L38N_A4_M1CLKN_1				FPGA_BANK1_LED		BANK1测试LED输出
+NET "ov_fpga_led[1]" LOC = N18	| IOSTANDARD = LVCMOS33;
+#Gate-F	AE5		PROGRAM_B_2						FPGA_BANK2_LED		BANK2测试LED输出
+NET "ov_fpga_led[2]" LOC = AE5	| IOSTANDARD = LVCMOS33;
+#Gate-G	AB8		IO_L4N_3						FPGA_BANK3_LED		BANK3测试LED输出
+NET "ov_fpga_led[3]" LOC = AB8	| IOSTANDARD = LVCMOS33;
+##Gate-C	H21		IO_L5N_M5A9_5					FPGA_BANK5_LED		BANK5测试LED输出
+#NET "ov_fpga_led[4]" LOC = H21	| IOSTANDARD = LVCMOS33;
+
+##Gate-A	F7		IO_L5N_0						FPGA_BANK0_SW		BANK0测试开关量输入
+#NET "ov_fpga_sw[0]" LOC = F7	| IOSTANDARD = LVCMOS33;
+##Gate-D	R23		IO_L39P_M1A3_1					FPGA_BANK1_SW		BANK1测试开关量输入
+#NET "ov_fpga_sw[1]" LOC = R23	| IOSTANDARD = LVCMOS33;
+##Gate-F	AF5		IO_L64N_D9_2					FPGA_BANK2_SW		BANK2测试开关量输入
+#NET "ov_fpga_sw[2]" LOC = AF5	| IOSTANDARD = LVCMOS33;
+##Gate-G	AA8		IO_L4P_3						FPGA_BANK3_SW		BANK3测试开关量输入
+#NET "ov_fpga_sw[3]" LOC = AA8	| IOSTANDARD = LVCMOS33;
+##Gate-C	H20		IO_L5P_M5A8_5					FPGA_BANK5_SW		BANK5测试开关量输入
+#NET "ov_fpga_sw[4]" LOC = H20	| IOSTANDARD = LVCMOS33;
+
+# ref 2 timing constraints ------------------------------------------------------------------------
+#----ref clk constraint ---------------------------------------------------------------------------
+NET "sys_clk" TNM_NET = "TNM_sys_clk";
+TIMESPEC "TS_sys_clk" = PERIOD "TNM_sys_clk" 40 MHz HIGH 50 %;
+
+
+
+#----ref MultiPath constraint ---------------------------------------------------------------------
+#NET "clk_rst_top_inst/w_reset_loc_pll"	TIG;
+
+#NET "CLKA" TNM_NET = FFS "GRP_A";
+#NET "CLKB" TNM_NET = FFS "GRP_B";
+#TIMESPEC TS_Example = FROM "GRP_A" TO "GRP_B" 5 ns DATAPATHONLY;
+
+
+
+
+

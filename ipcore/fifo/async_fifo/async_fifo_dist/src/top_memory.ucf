@@ -1,0 +1,13 @@
+
+#pin2ucf - Fri Apr 11 09:21:23 2014
+#The following constraints were newly added
+
+
+
+NET "clk_wr" TNM_NET = "TNM_clk_wr";
+TIMESPEC "TS_clk_wr" = PERIOD "TNM_clk_wr" 300 MHz HIGH 50 %;
+
+NET "clk_rd" TNM_NET = "TNM_clk_rd";
+TIMESPEC "TS_clk_rd" = PERIOD "TNM_clk_rd" 300 MHz HIGH 50 %;
+
+

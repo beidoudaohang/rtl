@@ -1,0 +1,444 @@
+# Reading D:/tools/modeltech64_10.4/tcl/vsim/pref.tcl
+# //  ModelSim SE-64 10.4 Dec  3 2014 
+# //
+# //  Copyright 1991-2014 Mentor Graphics Corporation
+# //  All Rights Reserved.
+# //
+# //  THIS WORK CONTAINS TRADE SECRET AND PROPRIETARY INFORMATION
+# //  WHICH IS THE PROPERTY OF MENTOR GRAPHICS CORPORATION OR ITS
+# //  LICENSORS AND IS SUBJECT TO LICENSE TERMS.
+# //  THIS DOCUMENT CONTAINS TRADE SECRETS AND COMMERCIAL OR FINANCIAL
+# //  INFORMATION THAT ARE PRIVILEGED, CONFIDENTIAL, AND EXEMPT FROM
+# //  DISCLOSURE UNDER THE FREEDOM OF INFORMATION ACT, 5 U.S.C. SECTION 552.
+# //  FURTHERMORE, THIS INFORMATION IS PROHIBITED FROM DISCLOSURE UNDER
+# //  THE TRADE SECRETS ACT, 18 U.S.C. SECTION 1905.
+# //
+# do define.do
+# behav
+# async_fifo
+# testcase_1
+# wave_async_fifo.do
+f
+# behav
+# async_fifo
+# testcase_1
+# ** Warning: (vlib-34) Library already exists at "work".
+# 
+# wave_async_fifo.do
+# compile start ******
+# 0
+# 0
+# 0
+# 0
+# 0
+# 0
+# 0
+# 1
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:37:40 on Aug 09,2016
+# vlog -reportprogress 300 d:\tools\Xilinx\14.7\ISE_DS\ISE\/verilog/src/glbl.v 
+# -- Compiling module glbl
+# 
+# Top level modules:
+# 	glbl
+# End time: 14:37:41 on Aug 09,2016, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 0
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:37:41 on Aug 09,2016
+# vlog -reportprogress 300 ../src/async_fifo_dist/async_fifo.v ../src/async_fifo_dist/async_fifo_rd_logic.v ../src/async_fifo_dist/async_fifo_wr_logic.v ../src/async_fifo_dist/async_fifo_wrap_rd.v ../src/async_fifo_dist/async_fifo_wrap_wr.v ../src/async_fifo_dist/bin2gray.v ../src/async_fifo_dist/dpram_dist.v ../src/async_fifo_dist/gray2bin.v ../src/async_fifo_dist/rst_sync.v 
+# -- Compiling module async_fifo
+# -- Compiling module async_fifo_rd_logic
+# -- Compiling module async_fifo_wr_logic
+# -- Compiling module async_fifo_wrap_rd
+# -- Compiling module async_fifo_wrap_wr
+# -- Compiling module bin2gray
+# -- Compiling module dpram_dist
+# -- Compiling module gray2bin
+# -- Compiling module rst_sync
+# 
+# Top level modules:
+# 	async_fifo
+# End time: 14:37:41 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:37:41 on Aug 09,2016
+# vlog -reportprogress 300 "+define+TESTCASE=testcase_1" ../testbench/tb_async_fifo/*.v 
+# ** Error: (vlog-7) Failed to open design unit file "../testbench/tb_async_fifo/*.v" in read mode.
+# 
+# No such file or directory. (errno = ENOENT)
+# End time: 14:37:41 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 1, Warnings: 0
+# ** Error: d:/tools/modeltech64_10.4/win64/vlog failed.
+# Error in macro ./compile.do line 133
+# d:/tools/modeltech64_10.4/win64/vlog failed.
+#     while executing
+# "vlog	+define+TESTCASE=$TESTCASE	../testbench/tb_$TB_MODULE/*.v"
+f
+# behav
+# async_fifo
+# testcase_1
+# ** Warning: (vlib-34) Library already exists at "work".
+# 
+# wave_async_fifo.do
+# compile start ******
+# 0
+# 0
+# 0
+# 0
+# 0
+# 0
+# 0
+# 1
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:37:57 on Aug 09,2016
+# vlog -reportprogress 300 d:\tools\Xilinx\14.7\ISE_DS\ISE\/verilog/src/glbl.v 
+# -- Compiling module glbl
+# 
+# Top level modules:
+# 	glbl
+# End time: 14:37:57 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:37:57 on Aug 09,2016
+# vlog -reportprogress 300 ../src/async_fifo_dist/async_fifo.v ../src/async_fifo_dist/async_fifo_rd_logic.v ../src/async_fifo_dist/async_fifo_wr_logic.v ../src/async_fifo_dist/async_fifo_wrap_rd.v ../src/async_fifo_dist/async_fifo_wrap_wr.v ../src/async_fifo_dist/bin2gray.v ../src/async_fifo_dist/dpram_dist.v ../src/async_fifo_dist/gray2bin.v ../src/async_fifo_dist/rst_sync.v 
+# -- Compiling module async_fifo
+# -- Compiling module async_fifo_rd_logic
+# -- Compiling module async_fifo_wr_logic
+# -- Compiling module async_fifo_wrap_rd
+# -- Compiling module async_fifo_wrap_wr
+# -- Compiling module bin2gray
+# -- Compiling module dpram_dist
+# -- Compiling module gray2bin
+# -- Compiling module rst_sync
+# 
+# Top level modules:
+# 	async_fifo
+# End time: 14:37:57 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:37:57 on Aug 09,2016
+# vlog -reportprogress 300 "+define+TESTCASE=testcase_1" ../testbench/tb_async_fifo/harness.v ../testbench/tb_async_fifo/monitor.v ../testbench/tb_async_fifo/testcase_1.v ../testbench/tb_async_fifo/testcase_2.v 
+# -- Compiling module harness
+# -- Compiling module monitor
+# -- Compiling module testcase_1
+# -- Compiling module testcase_2
+# 
+# Top level modules:
+# 	harness
+# 	monitor
+# 	testcase_1
+# 	testcase_2
+# End time: 14:37:58 on Aug 09,2016, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 0
+# behav
+# async_fifo
+# testcase_1
+# ** Warning: (vlib-34) Library already exists at "work".
+# 
+# wave_async_fifo.do
+# simulation start ******
+# vsim -gui -do "define.do" 
+# Start time: 14:37:59 on Aug 09,2016
+# ** Warning: (vsim-8891) All optimizations are turned off because the -novopt switch is in effect. This will cause your simulation to run very slowly. If you are using this switch to preserve visibility for Debug or PLI features please see the User's Manual section on Preserving Object Visibility with vopt.
+# 
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.glbl
+# Loading work.glbl
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.harness
+# Loading work.harness
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo
+# Loading work.async_fifo
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_wrap_wr
+# Loading work.async_fifo_wrap_wr
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.rst_sync
+# Loading work.rst_sync
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.gray2bin
+# Loading work.gray2bin
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_wr_logic
+# Loading work.async_fifo_wr_logic
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.bin2gray
+# Loading work.bin2gray
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_wrap_rd
+# Loading work.async_fifo_wrap_rd
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_rd_logic
+# Loading work.async_fifo_rd_logic
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.dpram_dist
+# Loading work.dpram_dist
+# ** Error: (vsim-3033) ../testbench/tb_async_fifo/harness.v(93): Instantiation of 'fifo_w8d16' failed. The design unit was not found.
+#    Time: 0 ns  Iteration: 0  Instance: /harness File: ../testbench/tb_async_fifo/harness.v
+#         Searched libraries:
+#             F:/SimLib/ISE14P7_model10p4/unisims_ver
+#             F:/SimLib/ISE14P7_model10p4/secureip
+#             F:/SimLib/ISE14P7_model10p4/xilinxcorelib_ver
+#             F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.testcase_1
+# Loading work.testcase_1
+# Error loading design
+# Error: Error loading design
+#        Pausing macro execution
+# MACRO ./simulate.do PAUSED at line 88
+f
+# behav
+# async_fifo
+# testcase_1
+# ** Warning: (vlib-34) Library already exists at "work".
+# 
+# wave_async_fifo.do
+# compile start ******
+# 0
+# 0
+# 0
+# 0
+# 0
+# 0
+# 0
+# 1
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:39:33 on Aug 09,2016
+# vlog -reportprogress 300 d:\tools\Xilinx\14.7\ISE_DS\ISE\/verilog/src/glbl.v 
+# -- Compiling module glbl
+# 
+# Top level modules:
+# 	glbl
+# End time: 14:39:33 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:39:33 on Aug 09,2016
+# vlog -reportprogress 300 ../src/async_fifo_dist/async_fifo.v ../src/async_fifo_dist/async_fifo_rd_logic.v ../src/async_fifo_dist/async_fifo_wr_logic.v ../src/async_fifo_dist/async_fifo_wrap_rd.v ../src/async_fifo_dist/async_fifo_wrap_wr.v ../src/async_fifo_dist/bin2gray.v ../src/async_fifo_dist/dpram_dist.v ../src/async_fifo_dist/gray2bin.v ../src/async_fifo_dist/rst_sync.v 
+# -- Compiling module async_fifo
+# -- Compiling module async_fifo_rd_logic
+# -- Compiling module async_fifo_wr_logic
+# -- Compiling module async_fifo_wrap_rd
+# -- Compiling module async_fifo_wrap_wr
+# -- Compiling module bin2gray
+# -- Compiling module dpram_dist
+# -- Compiling module gray2bin
+# -- Compiling module rst_sync
+# 
+# Top level modules:
+# 	async_fifo
+# End time: 14:39:33 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:39:33 on Aug 09,2016
+# vlog -reportprogress 300 ../src/fifo_core/fifo_w8d16/fifo_w8d16.v 
+# -- Compiling module fifo_w8d16
+# -- Compiling module glbl
+# 
+# Top level modules:
+# 	fifo_w8d16
+# 	glbl
+# End time: 14:39:33 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:39:33 on Aug 09,2016
+# vlog -reportprogress 300 "+define+TESTCASE=testcase_1" ../testbench/tb_async_fifo/harness.v ../testbench/tb_async_fifo/monitor.v ../testbench/tb_async_fifo/testcase_1.v ../testbench/tb_async_fifo/testcase_2.v 
+# -- Compiling module harness
+# -- Compiling module monitor
+# -- Compiling module testcase_1
+# -- Compiling module testcase_2
+# 
+# Top level modules:
+# 	harness
+# 	monitor
+# 	testcase_1
+# 	testcase_2
+# End time: 14:39:33 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# behav
+# async_fifo
+# testcase_1
+# ** Warning: (vlib-34) Library already exists at "work".
+# 
+# wave_async_fifo.do
+# simulation start ******
+# vsim 
+# Start time: 14:39:34 on Aug 09,2016
+# ** Warning: (vsim-8891) All optimizations are turned off because the -novopt switch is in effect. This will cause your simulation to run very slowly. If you are using this switch to preserve visibility for Debug or PLI features please see the User's Manual section on Preserving Object Visibility with vopt.
+# 
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.glbl
+# Loading work.glbl
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.harness
+# Loading work.harness
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo
+# Loading work.async_fifo
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_wrap_wr
+# Loading work.async_fifo_wrap_wr
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.rst_sync
+# Loading work.rst_sync
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.gray2bin
+# Loading work.gray2bin
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_wr_logic
+# Loading work.async_fifo_wr_logic
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.bin2gray
+# Loading work.bin2gray
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_wrap_rd
+# Loading work.async_fifo_wrap_rd
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_rd_logic
+# Loading work.async_fifo_rd_logic
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.dpram_dist
+# Loading work.dpram_dist
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.fifo_w8d16
+# Loading work.fifo_w8d16
+# Loading unisims_ver.GND
+# Loading unisims_ver.FDP
+# Loading unisims_ver.FDC
+# Loading unisims_ver.FD
+# Loading unisims_ver.FDCE
+# Loading unisims_ver.RAM16X1D
+# Loading unisims_ver.RAM32M
+# Loading unisims_ver.FDPE
+# Loading unisims_ver.LUT2
+# Loading unisims_ver.LUT3
+# Loading unisims_ver.LUT4
+# Loading unisims_ver.LUT6
+# Loading unisims_ver.LUT5
+# Loading unisims_ver.INV
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.testcase_1
+# Loading work.testcase_1
+# Loading unisims_ver.RAM32X1D
+# wave do file does not exist
+# hexadecimal
+# .main_pane.library.interior.cs.body
+# .main_pane.objects.interior.cs.body.tree
+# .main_pane.structure.interior.cs.body.struct
+# .main_pane.wave.interior.cs.body.pw.wf
+# ** Note: $stop    : ../testbench/tb_async_fifo/testcase_1.v(161)
+#    Time: 10400 ns  Iteration: 0  Instance: /testcase_1
+# Break in Module testcase_1 at ../testbench/tb_async_fifo/testcase_1.v line 161
+qs
+f
+# behav
+# async_fifo
+# testcase_1
+# ** Warning: (vlib-34) Library already exists at "work".
+# 
+# wave_async_fifo.do
+# compile start ******
+# 0
+# 0
+# 0
+# 0
+# 0
+# 0
+# 0
+# 1
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:40:12 on Aug 09,2016
+# vlog -reportprogress 300 d:\tools\Xilinx\14.7\ISE_DS\ISE\/verilog/src/glbl.v 
+# -- Compiling module glbl
+# 
+# Top level modules:
+# 	glbl
+# End time: 14:40:12 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:40:12 on Aug 09,2016
+# vlog -reportprogress 300 ../src/async_fifo_dist/async_fifo.v ../src/async_fifo_dist/async_fifo_rd_logic.v ../src/async_fifo_dist/async_fifo_wr_logic.v ../src/async_fifo_dist/async_fifo_wrap_rd.v ../src/async_fifo_dist/async_fifo_wrap_wr.v ../src/async_fifo_dist/bin2gray.v ../src/async_fifo_dist/dpram_dist.v ../src/async_fifo_dist/gray2bin.v ../src/async_fifo_dist/rst_sync.v 
+# -- Compiling module async_fifo
+# -- Compiling module async_fifo_rd_logic
+# -- Compiling module async_fifo_wr_logic
+# -- Compiling module async_fifo_wrap_rd
+# -- Compiling module async_fifo_wrap_wr
+# -- Compiling module bin2gray
+# -- Compiling module dpram_dist
+# -- Compiling module gray2bin
+# -- Compiling module rst_sync
+# 
+# Top level modules:
+# 	async_fifo
+# End time: 14:40:12 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:40:12 on Aug 09,2016
+# vlog -reportprogress 300 ../src/fifo_core/fifo_w8d16/fifo_w8d16.v 
+# -- Compiling module fifo_w8d16
+# -- Compiling module glbl
+# 
+# Top level modules:
+# 	fifo_w8d16
+# 	glbl
+# End time: 14:40:12 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# Model Technology ModelSim SE-64 vlog 10.4 Compiler 2014.12 Dec  3 2014
+# Start time: 14:40:12 on Aug 09,2016
+# vlog -reportprogress 300 "+define+TESTCASE=testcase_1" ../testbench/tb_async_fifo/harness.v ../testbench/tb_async_fifo/monitor.v ../testbench/tb_async_fifo/testcase_1.v ../testbench/tb_async_fifo/testcase_2.v 
+# -- Compiling module harness
+# -- Compiling module monitor
+# -- Compiling module testcase_1
+# -- Compiling module testcase_2
+# 
+# Top level modules:
+# 	harness
+# 	monitor
+# 	testcase_1
+# 	testcase_2
+# End time: 14:40:12 on Aug 09,2016, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# behav
+# async_fifo
+# testcase_1
+# ** Warning: (vlib-34) Library already exists at "work".
+# 
+# wave_async_fifo.do
+# simulation start ******
+# vsim 
+# Start time: 14:40:12 on Aug 09,2016
+# ** Warning: (vsim-8891) All optimizations are turned off because the -novopt switch is in effect. This will cause your simulation to run very slowly. If you are using this switch to preserve visibility for Debug or PLI features please see the User's Manual section on Preserving Object Visibility with vopt.
+# 
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.glbl
+# Loading work.glbl
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.harness
+# Loading work.harness
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo
+# Loading work.async_fifo
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_wrap_wr
+# Loading work.async_fifo_wrap_wr
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.rst_sync
+# Loading work.rst_sync
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.gray2bin
+# Loading work.gray2bin
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_wr_logic
+# Loading work.async_fifo_wr_logic
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.bin2gray
+# Loading work.bin2gray
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_wrap_rd
+# Loading work.async_fifo_wrap_rd
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.async_fifo_rd_logic
+# Loading work.async_fifo_rd_logic
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.dpram_dist
+# Loading work.dpram_dist
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.fifo_w8d16
+# Loading work.fifo_w8d16
+# Loading unisims_ver.GND
+# Loading unisims_ver.FDP
+# Loading unisims_ver.FDC
+# Loading unisims_ver.FD
+# Loading unisims_ver.FDCE
+# Loading unisims_ver.RAM16X1D
+# Loading unisims_ver.RAM32M
+# Loading unisims_ver.FDPE
+# Loading unisims_ver.LUT2
+# Loading unisims_ver.LUT3
+# Loading unisims_ver.LUT4
+# Loading unisims_ver.LUT6
+# Loading unisims_ver.LUT5
+# Loading unisims_ver.INV
+# Refreshing F:/XHT/zme/FPGA/1_my_ip_core/fifo/async_fifo/async_fifo_dist/sim/work.testcase_1
+# Loading work.testcase_1
+# Loading unisims_ver.RAM32X1D
+# wave do file exists
+# hexadecimal
+# .main_pane.library.interior.cs.body
+# .main_pane.objects.interior.cs.body.tree
+# .main_pane.structure.interior.cs.body.struct
+# ** Error: (vish-4014) No objects found matching '/monitor/async_rd_cnt'.
+# Executing ONERROR command at macro ./wave_async_fifo.do line 41
+# ** Error: (vish-4014) No objects found matching '/monitor/ov_fifo_dout'.
+# Executing ONERROR command at macro ./wave_async_fifo.do line 42
+# .main_pane.wave.interior.cs.body.pw.wf
+# ** Note: $stop    : ../testbench/tb_async_fifo/testcase_1.v(161)
+#    Time: 10400 ns  Iteration: 0  Instance: /testcase_1
+# Break in Module testcase_1 at ../testbench/tb_async_fifo/testcase_1.v line 161
+wwqf
+# End time: 14:40:26 on Aug 09,2016, Elapsed time: 0:00:14
+# Errors: 6, Warnings: 1
