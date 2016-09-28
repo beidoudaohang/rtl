@@ -1,0 +1,1 @@
+modelsim -do define.do

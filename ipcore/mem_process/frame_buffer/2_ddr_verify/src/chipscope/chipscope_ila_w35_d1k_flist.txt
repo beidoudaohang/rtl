@@ -1,0 +1,18 @@
+# Output products list for <chipscope_ila_w35_d1k>
+_xmsgs\pn_parser.xmsgs
+chipscope_ila_w35_d1k.asy
+chipscope_ila_w35_d1k.cdc
+chipscope_ila_w35_d1k.constraints\chipscope_ila_w35_d1k.ucf
+chipscope_ila_w35_d1k.constraints\chipscope_ila_w35_d1k.xdc
+chipscope_ila_w35_d1k.gise
+chipscope_ila_w35_d1k.ncf
+chipscope_ila_w35_d1k.ngc
+chipscope_ila_w35_d1k.ucf
+chipscope_ila_w35_d1k.v
+chipscope_ila_w35_d1k.veo
+chipscope_ila_w35_d1k.xco
+chipscope_ila_w35_d1k.xdc
+chipscope_ila_w35_d1k.xise
+chipscope_ila_w35_d1k_flist.txt
+chipscope_ila_w35_d1k_readme.txt
+chipscope_ila_w35_d1k_xmdf.tcl
