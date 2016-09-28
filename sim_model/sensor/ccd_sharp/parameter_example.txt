@@ -1,0 +1,83 @@
+
+//-------------------------------------------------------------------------------------------------
+//  -- 版权所有者   : 中国大恒（集团）有限公司北京图像视觉技术分公司, 2010 -2015.
+//  -- 保密级别     ：绝密.
+//  -- 部门         : 硬件部，FPGA工作组
+//  -- 模块名       : parameter_example
+//  -- 设计者       : 邢海涛
+//-------------------------------------------------------------------------------------------------
+//
+//  -- 版本记录 :
+//
+//  -- 作者         :| 修改日期				:|  修改说明
+//-------------------------------------------------------------------------------------------------
+//  -- 邢海涛       :| 2015/11/16 10:03:30	:|  初始版本
+//-------------------------------------------------------------------------------------------------
+//
+//  -- 模块描述     :
+//              1)  : ... ...
+//
+//              2)  : ... ...
+//
+//              3)  : ... ...
+//
+//-------------------------------------------------------------------------------------------------
+//仿真单位/精度
+`timescale 1ns/1ps
+//-------------------------------------------------------------------------------------------------
+
+module parameter_example ();
+
+	//	ref signals
+
+	//	===============================================================================================
+	//	ref ***ccd sharp RJ33J3BA 130m pixel***
+	//	===============================================================================================
+	//	-------------------------------------------------------------------------------------
+	//	sensor model parameter
+	//	-------------------------------------------------------------------------------------
+	parameter	CCD_SHARP_DATA_WIDTH			= 16						;	//像素数据位宽
+	parameter	CCD_SHARP_IMAGE_WIDTH			= 1320						;	//图像宽度
+	parameter	CCD_SHARP_IMAGE_HEIGHT			= 976						;	//图像高度
+	parameter	CCD_SHARP_BLACK_VFRONT			= 8							;	//场头黑行个数
+	parameter	CCD_SHARP_BLACK_VREAR			= 2							;	//场尾黑行个数
+	parameter	CCD_SHARP_BLACK_HFRONT			= 12						;	//行头黑像素个数
+	parameter	CCD_SHARP_BLACK_HREAR			= 40						;	//行尾黑像素个数
+	parameter	CCD_SHARP_DUMMY_VFRONT			= 2							;	//场头哑行个数
+	parameter	CCD_SHARP_DUMMY_VREAR			= 0							;	//场尾哑行个数
+	parameter	CCD_SHARP_DUMMY_HFRONT			= 4							;	//行头哑像素个数
+	parameter	CCD_SHARP_DUMMY_HREAR			= 0							;	//行尾哑像素个数
+	parameter	CCD_SHARP_DUMMY_INIT_VALUE		= 16						;	//DUMMY初始值
+	parameter	CCD_SHARP_BLACK_INIT_VALUE		= 32						;	//BLACK初始值
+	parameter	CCD_SHARP_IMAGE_SOURCE			= "RANDOM"					;	//"RANDOM" or "FILE" or "LINE_INC" or "FRAME_INC" or "PIX_INC"
+	parameter	CCD_SHARP_SOURCE_FILE_PATH		= "source_file/ccd_sharp/"	;	//数据源文件路径
+
+	//	===============================================================================================
+	//	ref ***ccd sharp RJ33B4 30m pixel***
+	//	===============================================================================================
+	//	-------------------------------------------------------------------------------------
+	//	sensor model parameter
+	//	-------------------------------------------------------------------------------------
+	parameter	CCD_SHARP_DATA_WIDTH			= 16						;	//像素数据位宽
+	parameter	CCD_SHARP_IMAGE_WIDTH			= 660						;	//图像宽度
+	parameter	CCD_SHARP_IMAGE_HEIGHT			= 494						;	//图像高度
+	parameter	CCD_SHARP_BLACK_VFRONT			= 6							;	//场头黑行个数
+	parameter	CCD_SHARP_BLACK_VREAR			= 2							;	//场尾黑行个数
+	parameter	CCD_SHARP_BLACK_HFRONT			= 28						;	//行头黑像素个数
+	parameter	CCD_SHARP_BLACK_HREAR			= 28						;	//行尾黑像素个数
+	parameter	CCD_SHARP_DUMMY_VFRONT			= 2							;	//场头哑行个数
+	parameter	CCD_SHARP_DUMMY_VREAR			= 0							;	//场尾哑行个数
+	parameter	CCD_SHARP_DUMMY_HFRONT			= 4							;	//行头哑像素个数
+	parameter	CCD_SHARP_DUMMY_HREAR			= 0							;	//行尾哑像素个数
+	parameter	CCD_SHARP_DUMMY_INIT_VALUE		= 16						;	//DUMMY初始值
+	parameter	CCD_SHARP_BLACK_INIT_VALUE		= 32						;	//BLACK初始值
+	parameter	CCD_SHARP_IMAGE_SOURCE			= "RANDOM"					;	//"RANDOM" or "FILE" or "LINE_INC" or "FRAME_INC" or "PIX_INC"
+	parameter	CCD_SHARP_SOURCE_FILE_PATH		= "source_file/ccd_sharp/"	;	//数据源文件路径
+
+	//	ref ARCHITECTURE
+
+
+
+
+
+endmodule
