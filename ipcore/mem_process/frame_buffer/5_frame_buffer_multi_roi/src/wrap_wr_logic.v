@@ -73,7 +73,7 @@ module wrap_wr_logic # (
 	//  -------------------------------------------------------------------------------------
 	//  MCB端口
 	//  -------------------------------------------------------------------------------------
-	input							i_calib_done						,	//MCB校准完成信号，高有效
+	input							i_calib_done						,	//MCB校准完成信号，高有效，时钟域未知
 	output							o_wr_cmd_en							,	//MCB CMD FIFO 写信号，高有效
 	output	[2:0]					ov_wr_cmd_instr						,	//MCB CMD FIFO 指令
 	output	[5:0]					ov_wr_cmd_bl						,	//MCB CMD FIFO 突发长度
@@ -85,11 +85,40 @@ module wrap_wr_logic # (
 	input							i_wr_full								//MCB WR FIFO 满信号，高有效
 	);
 
+
+
+	//	ref signals
+
 	localparam		MAX_LINE_DATA				= SENSOR_MAX_WIDTH*2;			//BIT10 12 模式下 一行的数据量
 	localparam		MIN_FRONT_FIFO_DEPTH		= MAX_LINE_DATA/(DATA_WD/8);	//前端fifo深度的最小值
 	localparam		FRONT_FIFO_DEPTH			= (MIN_FRONT_FIFO_DEPTH<=256) ? 256 : ((MIN_FRONT_FIFO_DEPTH<=512) ? 512 : ((MIN_FRONT_FIFO_DEPTH<=1024) ? 1024 : 2048));
 
 
+
+
+//FSM Parameter Define
+parameter	S_IDLE		= 3'd0;
+parameter	S_PTR		= 3'd1;
+parameter	S_WR		= 3'd2;
+parameter	S_CMD		= 3'd3;
+parameter	S_FLAG		= 3'd4;
+
+reg		[2:0]	current_state	= S_IDLE;
+reg		[2:0]	next_state		= S_IDLE;
+
+//FSM for sim
+// synthesis translate_off
+reg		[127:0]			state_ascii;
+always @ ( * ) begin
+	case(current_state)
+		3'd0 :	state_ascii	<= "S_IDLE";
+		3'd1 :	state_ascii	<= "S_PTR";
+		3'd2 :	state_ascii	<= "S_WR";
+		3'd3 :	state_ascii	<= "S_CMD";
+		3'd4 :	state_ascii	<= "S_FLAG";
+	endcase
+end
+// synthesis translate_on
 
 
 	//	-------------------------------------------------------------------------------------
@@ -107,8 +136,13 @@ module wrap_wr_logic # (
 
 
 
+
+
+	//	ref ARCHITECTURE
+
+
 	//	===============================================================================================
-	//	--ref edge
+	//	ref ***edge***
 	//	===============================================================================================
 	//	-------------------------------------------------------------------------------------
 	//	fval 上升沿
@@ -136,8 +170,18 @@ module wrap_wr_logic # (
 		end
 	end
 
+//	-------------------------------------------------------------------------------------
+//	i_calib_done 时钟域未知，需要打2拍处理
+//	-------------------------------------------------------------------------------------
+reg		[1:0]		calib_done_shift	= 2'b00;
+always @ (posedge clk) begin
+	calib_done_shift	<= {calib_done_shift[0],i_calib_done};
+end
+
+
+
 	//	===============================================================================================
-	//	--ref front fifo
+	//	ref ***front fifo***
 	//	===============================================================================================
 	//	-------------------------------------------------------------------------------------
 	//	front fifo 例化
@@ -145,62 +189,61 @@ module wrap_wr_logic # (
 	generate
 		if(FRONT_FIFO_DEPTH==256) begin
 			frame_buf_front_fifo_w69d256_pe128 frame_buf_front_fifo_w69d256_pe128_inst (
-			.rst			(reset_fifo		),
-			.wr_clk			(clk_vin		),
-			.wr_en			(wr_en			),
-			.full			(fifo_full		),
-			.din			(din			),
-			.rd_clk			(clk			),
-			.rd_en			(rd_en			),
-			.empty			(empty			),
-			.prog_empty		(prog_empty		),
-			.dout			(dout			)
+			.rst			(reset_fifo			),
+			.wr_clk			(clk_vin			),
+			.wr_en			(fifo_wr_en			),
+			.full			(fifo_full			),
+			.din			(fifo_din			),
+			.rd_clk			(clk				),
+			.rd_en			(fifo_rd_en			),
+			.empty			(fifo_empty			),
+			.prog_empty		(fifo_prog_empty	),
+			.dout			(fifo_dout			)
 			);
 		end
 		else if(FRONT_FIFO_DEPTH==512) begin
 			frame_buf_front_fifo_w69d512_pe256 frame_buf_front_fifo_w69d512_pe256_inst (
-			.rst			(reset_fifo		),
-			.wr_clk			(clk_vin		),
-			.wr_en			(wr_en			),
-			.full			(fifo_full		),
-			.din			(din			),
-			.rd_clk			(clk			),
-			.rd_en			(rd_en			),
-			.empty			(empty			),
-			.prog_empty		(prog_empty		),
-			.dout			(dout			)
+			.rst			(reset_fifo			),
+			.wr_clk			(clk_vin			),
+			.wr_en			(fifo_wr_en			),
+			.full			(fifo_full			),
+			.din			(fifo_din			),
+			.rd_clk			(clk				),
+			.rd_en			(fifo_rd_en			),
+			.empty			(fifo_empty			),
+			.prog_empty		(fifo_prog_empty	),
+			.dout			(fifo_dout			)
 			);
 		end
 		else if(FRONT_FIFO_DEPTH==1024) begin
 			frame_buf_front_fifo_w69d1024_pe512 frame_buf_front_fifo_w69d1024_pe512_inst (
-			.rst			(reset_fifo		),
-			.wr_clk			(clk_vin		),
-			.wr_en			(wr_en			),
-			.full			(fifo_full		),
-			.din			(din			),
-			.rd_clk			(clk			),
-			.rd_en			(rd_en			),
-			.empty			(empty			),
-			.prog_empty		(prog_empty		),
-			.dout			(dout			)
+			.rst			(reset_fifo			),
+			.wr_clk			(clk_vin			),
+			.wr_en			(fifo_wr_en			),
+			.full			(fifo_full			),
+			.din			(fifo_din			),
+			.rd_clk			(clk				),
+			.rd_en			(fifo_rd_en			),
+			.empty			(fifo_empty			),
+			.prog_empty		(fifo_prog_empty	),
+			.dout			(fifo_dout			)
 			);
 		end
 		else if(FRONT_FIFO_DEPTH==2048) begin
 			frame_buf_front_fifo_w69d2048_pe1024 frame_buf_front_fifo_w69d2048_pe1024_inst (
-			.rst			(reset_fifo		),
-			.wr_clk			(clk_vin		),
-			.wr_en			(wr_en			),
-			.full			(fifo_full		),
-			.din			(din			),
-			.rd_clk			(clk			),
-			.rd_en			(rd_en			),
-			.empty			(empty			),
-			.prog_empty		(prog_empty		),
-			.dout			(dout			)
+			.rst			(reset_fifo			),
+			.wr_clk			(clk_vin			),
+			.wr_en			(fifo_wr_en			),
+			.full			(fifo_full			),
+			.din			(fifo_din			),
+			.rd_clk			(clk				),
+			.rd_en			(fifo_rd_en			),
+			.empty			(fifo_empty			),
+			.prog_empty		(fifo_prog_empty	),
+			.dout			(fifo_dout			)
 			);
 		end
 	endgenerate
-
 
 	//	-------------------------------------------------------------------------------------
 	//	fifo 操作
@@ -216,16 +259,94 @@ module wrap_wr_logic # (
 	assign	fifo_wr_en	= i_fval & i_dval & !fifo_full;
 
 	//	-------------------------------------------------------------------------------------
-	//	fifo输入数据
+	//	fifo 输入数据
 	//	1.fifo输入数据共有69bit，高5bit是flag，低64bit是数据
 	//	-------------------------------------------------------------------------------------
 	assign	fifo_din	= {i_trailer_flag,i_image_flag,i_chunk_flag,i_trailer_flag,i_leader_flag,iv_image_din};
 
+	//  -------------------------------------------------------------------------------------
+	//  FIFO 读信号
+	//	1.当处在写状态时，如果前级fifo不空，后级fifo不满，开采信号有效，则读信号有效
+	//	2.用组合逻辑来做，否则会导致多读出数据
+	//  -------------------------------------------------------------------------------------
+	assign	fifo_rd_en	= (current_state==S_WR) & !fifo_empty & !i_wr_full & stream_enable_reg;
 
-	//	-------------------------------------------------------------------------------------
-	//	fif 读使能
-	//	1.fifo输入数据共有69bit，高5bit是flag，低64bit是数据
-	//	-------------------------------------------------------------------------------------
+
+
+
+
+
+
+//	===============================================================================================
+//	ref ***FSM***
+//	===============================================================================================
+//	-------------------------------------------------------------------------------------
+//	FSM Sequential Logic
+//	-------------------------------------------------------------------------------------
+always @ (posedge clk) begin
+	if(reset) begin
+		current_state	<= S_IDLE;
+	end
+	else begin
+		current_state	<= next_state;
+	end
+end
+
+//	-------------------------------------------------------------------------------------
+//	FSM Conbinatial Logic
+//	-------------------------------------------------------------------------------------
+always @ ( * ) begin
+	case(current_state)
+		S_IDLE	:
+		if(stream_enable_reg==1'b1 && calib_done_shift[1]==1'b1 && fifo_prog_empty==1'b1 && able_to_write) begin
+			next_state	= S_PTR;
+		end
+		else begin
+			next_state	= S_IDLE;
+		end
+
+		S_S1	:
+			next_state	= S_S2;
+		S_S2	:
+			next_state	= S_S3;
+		S_S3	:
+			next_state	= S_IDLE;
+		default	:
+			next_state	= S_IDLE;
+	endcase
+end
+
+//	-------------------------------------------------------------------------------------
+//	FSM Output Logic
+//	-------------------------------------------------------------------------------------
+always @ (posedge clk) begin
+	if(current_state==S_IDLE) begin
+		reg1	<= 1'b0;
+	end
+	else if(input_port1==1'b1) begin
+		reg1	<= reg1 + 1'b1;
+	end
+end
+
+always @ (posedge clk) begin
+	if(current_state==S_1) begin
+		reg2	<= 1'b0;
+	end
+	else if(current_state==S_2) begin
+		reg2	<= reg2 + 1'b1;
+	end
+end
+
+
+
+
+
+
+
+
+
+
+
 
 
 
