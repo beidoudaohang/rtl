@@ -61,7 +61,6 @@ module frame_buffer # (
 	input									i_chunk_flag			,	//clk_in时钟域，chunk标志
 	input									i_trailer_flag			,	//clk_in时钟域，尾包标志
 	input	[DATA_WD-1:0]					iv_din					,	//clk_in时钟域，数据输入
-	input									i_stream_en_clk_in		,	//clk_in时钟域，流停止信号，信号有效时允许数据完整帧写入帧存，无效时立即停止写入，并复位读写地址指针，清帧存
 	output									o_fifo_full				,	//clk_in时钟域，前端FIFO满
 	output									o_buf_overflow			,	//clk_in时钟域，帧存前端FIFO溢出 0:帧存前端FIFO没有溢出 1:帧存前端FIFO出现过溢出的现象
 	//  ===============================================================================================
@@ -82,7 +81,7 @@ module frame_buffer # (
 	//	-------------------------------------------------------------------------------------
 	//	控制数据
 	//	-------------------------------------------------------------------------------------
-	input									i_stream_en				,	//流使能信号，SE=1等待完整帧，SE=0立即停止，屏蔽前端数据写入
+	input									i_stream_enable			,	//流使能信号，SE=1等待完整帧，SE=0立即停止，屏蔽前端数据写入
 	input	[SHORT_REG_WD-1:0]				iv_frame_depth			,   //帧缓存深度
 	input									i_chunk_mode_active		,	//chunk总开关，chunk开关影响leader和trailer的大小，通过判断chunk开关可以知道leader和trailer长度
 	//	-------------------------------------------------------------------------------------
