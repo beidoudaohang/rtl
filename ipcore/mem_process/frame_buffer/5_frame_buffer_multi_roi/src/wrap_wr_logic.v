@@ -25,7 +25,7 @@
 //-------------------------------------------------------------------------------------------------
 module wrap_wr_logic # (
 	parameter	DATA_WD										= 64		,	//输出数据位宽，这里使用同一宽度
-	parameter	ADDR_WD   									= 19		,	//帧内地址位宽 19=30-2-9,9bit由64位宽864深度决定，128M对应27位，wr_frame_ptr含一个进位bit所以-2
+	parameter	ADDR_WD   									= 19		,	//帧内地址位宽 19=30-2-9,9bit由64位宽864深度决定，128M对应27位，wr_ptr含一个进位bit所以-2
 	parameter	PTR_WIDTH									= 2			,	//读写指针的位宽，1-最大2帧 2-最大4帧 3-最大8帧 4-最大16帧 5-最大32帧
 	parameter	BURST_SIZE									= 32		,	//BURST_SIZE大小
 	parameter	DDR3_MASK_SIZE								= 8			,	//mask size
@@ -62,9 +62,10 @@ module wrap_wr_logic # (
 	input							reset								,	//复位信号
 	output	[PTR_WIDTH-1:0]			ov_wr_ptr							,	//写指针,以帧为单位
 	output	[ADDR_WD-1:0]			ov_wr_addr							,	//P2口命令使能信号，标志写地址已经生效，在仲裁保证下，数据能够写入DDR，此信号对地址判断非常重要
-	output							o_wr_ptr_changing					,	//写指针正在变化信号，输出给读模块，此时读指针不能变化
+	output							o_wr_ptr_change						,	//写指针正在变化信号，输出给读模块，此时读指针不能变化
 	input	[PTR_WIDTH-1 :0]		iv_rd_ptr							,	//读指针,以帧为单位
-	output							o_se_2_fvalrise						,	//停采到下一帧场信号上升沿，为了避免一帧之内的重同步，将信号展宽后传给读模块，clk时钟域，低电平标志停采
+	input							i_reading							,	//正在读标志
+	output							o_writing							,	//正在写标志
 	//  -------------------------------------------------------------------------------------
 	//  控制数据
 	//  -------------------------------------------------------------------------------------
@@ -93,7 +94,7 @@ module wrap_wr_logic # (
 	localparam	MAX_LINE_DATA				= SENSOR_MAX_WIDTH*2;			//BIT10 12 模式下 一行的数据量
 	localparam	MIN_FRONT_FIFO_DEPTH		= MAX_LINE_DATA/(DATA_WD/8);	//前端fifo深度的最小值
 	localparam	FRONT_FIFO_DEPTH			= (MIN_FRONT_FIFO_DEPTH<=256) ? 256 : ((MIN_FRONT_FIFO_DEPTH<=512) ? 512 : ((MIN_FRONT_FIFO_DEPTH<=1024) ? 1024 : 2048));
-	localparam	WR_FRAME_PTR_RESET_VALUE	= (TERRIBLE_TRAFFIC=="TRUE") ? 1 : 0;
+	localparam	wr_ptr_RESET_VALUE	= (TERRIBLE_TRAFFIC=="TRUE") ? 1 : 0;
 	localparam	WORD_CNT_WIDTH				= log2(BURST_SIZE);
 
 	//FSM Parameter Define
@@ -151,9 +152,10 @@ module wrap_wr_logic # (
 	wire								fifo_prog_empty		;
 	wire	[DATA_WD+4:0]				fifo_dout			;
 
-	reg		[PTR_WIDTH-1:0]				wr_frame_ptr		= 'b0;
+	reg		[PTR_WIDTH-1:0]				wr_ptr		= 'b0;
 	wire	[ADDR_WD-1:0]				wr_addr				;
 	reg		[WORD_CNT_WIDTH-1:0]		word_cnt 			= {(WORD_CNT_WIDTH){1'b1}};
+	reg									able_to_write 		= 1'b0;
 	wire								leader_flag			;
 	wire								trailer_flag		;
 	wire								chunk_flag			;
@@ -370,7 +372,7 @@ module wrap_wr_logic # (
 	//	1.burst_length=word_cnt，当图像有残包的时候，不会将多余的数据写入DDR
 	//	2.当停采的时候，写入64个数据，目的是保证所有开停采操作会绝对清空 mcb wr fifo
 	//	-------------------------------------------------------------------------------------
-	assign	ov_wr_cmd_bl	= (stream_enable_reg==1'b1) ? {(6-WORD_CNT_WIDTH){1'b0},word_cnt} : 6'b111111;
+	assign	ov_wr_cmd_bl	= (stream_enable_reg==1'b1) ? {{(6-WORD_CNT_WIDTH){1'b0}},word_cnt} : 6'b111111;
 
 	//	===============================================================================================
 	//	ref ***ptr addr cnt***
@@ -383,7 +385,7 @@ module wrap_wr_logic # (
 		//	当帧存深度是1帧或者复位信号有效或者使能无效时，写指针复位
 		//	-------------------------------------------------------------------------------------
 		if(frame_depth_reg==1 || reset==1'b1 || stream_enable_reg==1'b0) begin
-			wr_frame_ptr	<= WR_FRAME_PTR_RESET_VALUE;
+			wr_ptr	<= wr_ptr_RESET_VALUE;
 		end
 		else begin
 			//	-------------------------------------------------------------------------------------
@@ -399,12 +401,12 @@ module wrap_wr_logic # (
 					//	1.如果读模块正在读0号内存，那么写指针要跳过读指针，实现写跨越
 					//	2.如果读模块没有在读0号内存，那么写指针写0号地址
 					//	-------------------------------------------------------------------------------------
-					if(wr_frame_ptr==(frame_depth_reg-1)) begin
-						if(iv_rd_frame_ptr==0) begin
-							wr_frame_ptr	<= 1;
+					if(wr_ptr==(frame_depth_reg-1)) begin
+						if(iv_rd_ptr==0) begin
+							wr_ptr	<= 1;
 						end
 						else begin
-							wr_frame_ptr	<= 0;
+							wr_ptr	<= 0;
 						end
 					end
 					//	-------------------------------------------------------------------------------------
@@ -412,12 +414,12 @@ module wrap_wr_logic # (
 					//	1.如果写指针+1=读指针，那么写指针写0号地址
 					//	2.如果写指针+1!=读指针，那么写指针自增
 					//	-------------------------------------------------------------------------------------
-					else if(iv_rd_frame_ptr==(frame_depth_reg-1)) begin
-						if((wr_frame_ptr+1'b1)==iv_rd_frame_ptr) begin
-							wr_frame_ptr	<= 0;
+					else if(iv_rd_ptr==(frame_depth_reg-1)) begin
+						if((wr_ptr+1'b1)==iv_rd_ptr) begin
+							wr_ptr	<= 0;
 						end
 						else begin
-							wr_frame_ptr	<= wr_frame_ptr + 1'b1;
+							wr_ptr	<= wr_ptr + 1'b1;
 						end
 					end
 					//	-------------------------------------------------------------------------------------
@@ -426,11 +428,11 @@ module wrap_wr_logic # (
 					//	2.如果写指针+1!=读指针，那么写指针自增
 					//	-------------------------------------------------------------------------------------
 					else begin
-						if((wr_frame_ptr+1'b1)==iv_rd_frame_ptr) begin
-							wr_frame_ptr	<= iv_rd_frame_ptr + 1'b1;
+						if((wr_ptr+1'b1)==iv_rd_ptr) begin
+							wr_ptr	<= iv_rd_ptr + 1'b1;
 						end
 						else begin
-							wr_frame_ptr	<= wr_frame_ptr + 1'b1;
+							wr_ptr	<= wr_ptr + 1'b1;
 						end
 					end
 				end
@@ -440,17 +442,17 @@ module wrap_wr_logic # (
 				//	2.如果写指针没有达到了最大值，则写指针自增
 				//	-------------------------------------------------------------------------------------
 				else begin
-					if(wr_frame_ptr==(frame_depth_reg-1)) begin
-						wr_frame_ptr	<= 0;
+					if(wr_ptr==(frame_depth_reg-1)) begin
+						wr_ptr	<= 0;
 					end
 					else begin
-						wr_frame_ptr	<= wr_frame_ptr + 1'b1;
+						wr_ptr	<= wr_ptr + 1'b1;
 					end
 				end
 			end
 		end
 	end
-	assign	ov_wr_frame_ptr		= wr_frame_ptr;
+	assign	ov_wr_ptr		= wr_ptr;
 
 	//  -------------------------------------------------------------------------------------
 	//  写地址逻辑
@@ -492,6 +494,20 @@ module wrap_wr_logic # (
 		end
 	end
 
+	//  -------------------------------------------------------------------------------------
+	//  允许写信号--只用于单帧
+	//	1.只在单帧时，该信号才是有效的。当一帧正在读时，就不允许写，把这一帧丢弃。
+	//	2.在多帧时，是无效的，因为写可以跨越读，不会丢掉写数据
+	//  -------------------------------------------------------------------------------------
+	always @ (posedge clk) begin
+		if(frame_depth_reg==1) begin
+			able_to_write	<= !i_reading;
+		end
+		else begin
+			able_to_write	<= 1'b1;
+		end
+	end
+
 	//	-------------------------------------------------------------------------------------
 	//	flag 重命名
 	//	-------------------------------------------------------------------------------------
@@ -524,7 +540,6 @@ module wrap_wr_logic # (
 	//	===============================================================================================
 	//	-------------------------------------------------------------------------------------
 	//	当状态机处于 PTR 状态的时候，wr_ptr_change设置为1，其他状态都设置为0
-	//	此时writing会比ptr提前一个时钟产生，会不会有问题*********************
 	//	-------------------------------------------------------------------------------------
 	always @ (posedge clk) begin
 		if(current_state==S_PTR) begin
@@ -539,20 +554,17 @@ module wrap_wr_logic # (
 	//  -------------------------------------------------------------------------------------
 	//  正在写
 	//	1.当处于idle状态时，正在写信号清零
-	//	2.当处于其他状态的时候，正在写信号拉高
+	//	2.当处于 PTR 状态且 wr_ptr_change=1的时候，才能变为1，这是要和 wr_framge_ptr 一起改变的原因
 	//  -------------------------------------------------------------------------------------
 	always @ (posedge clk) begin
 		if(current_state==S_IDLE) begin
 			writing_reg	<= 1'b0;
 		end
-		else begin
+		else if(current_state==S_PTR && wr_ptr_change==1'b1) begin
 			writing_reg	<= 1'b1;
 		end
 	end
 	assign	o_writing	= writing_reg;
-
-
-
 
 	//	===============================================================================================
 	//	ref ***FSM***
@@ -637,7 +649,7 @@ module wrap_wr_logic # (
 			//	1.当前flag没有下降沿
 			//	2.wr cmd fifo没有满
 			//	-------------------------------------------------------------------------------------
-			else if(wr_cmd_fifo_full==1'b0) begin
+			else if(i_wr_cmd_full==1'b0) begin
 				next_state	= S_WR;
 			end
 			else begin
@@ -654,6 +666,9 @@ module wrap_wr_logic # (
 			//	-------------------------------------------------------------------------------------
 			if(wr_cmd_en==1'b1) begin
 				next_state	= S_WR;
+			end
+			else begin
+				next_state	= S_FLAG;
 			end
 			default	:
 			next_state	= S_IDLE;
