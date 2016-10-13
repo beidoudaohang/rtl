@@ -46,6 +46,7 @@ module frame_buffer # (
 	parameter	SHORT_REG_WD   				= 16					,	//短寄存器位宽
 	parameter	REG_WD   					= 32					,	//寄存器位宽
 	parameter	MROI_MAX_NUM 				= 8						,	//Multi-ROI的最大个数
+	parameter	SENSOR_MAX_WIDTH			= 4912					,	//Sensor最大的行有效宽度，以像素时钟为单位
 	parameter	SENSOR_ALL_PIX_DIV4			= 1920					,	//Sensor最大窗口下，所有像素的个数/4
 	parameter	PTR_WIDTH					= 2							//读写指针的位宽，1-最大2帧 2-最大4帧 3-最大8帧 4-最大16帧 5-最大32帧
 	)
@@ -61,7 +62,6 @@ module frame_buffer # (
 	input									i_chunk_flag			,	//clk_in时钟域，chunk标志
 	input									i_trailer_flag			,	//clk_in时钟域，尾包标志
 	input	[DATA_WD-1:0]					iv_din					,	//clk_in时钟域，数据输入
-	output									o_fifo_full				,	//clk_in时钟域，前端FIFO满
 	output									o_buf_overflow			,	//clk_in时钟域，帧存前端FIFO溢出 0:帧存前端FIFO没有溢出 1:帧存前端FIFO出现过溢出的现象
 	//  ===============================================================================================
 	//  图像输出时钟域
@@ -132,15 +132,8 @@ module frame_buffer # (
 	output									mcb1_dram_ck_n      		//时钟负
 	);
 
-	//  -------------------------------------------------------------------------------------
-	//	常数定义
-	//  -------------------------------------------------------------------------------------
-//	localparam	MAX_IMAGE_DATA_DIV8			= SENSOR_ALL_PIX_DIV4;
-//	localparam	ALL_DATA_DIV8				= MAX_IMAGE_DATA_DIV8+(MAX_LEADER_ADDR_SIZE+MAX_TRAILER_ADDR_SIZE+MAX_CHUNK_ADDR_SIZE+MAX_TRAILER_FINAL_ADDR_SIZE)*BURST_BYTE/8;
-//	localparam	MEM_MAX_DATA_DIV8			= 2**(BYTE_ADDR_WD-3);
-//	localparam	MAX_FRAME_NUM				= MEM_MAX_DATA_DIV8/ALL_DATA_DIV8;
 
-
+	//	ref signals
 
 	//	===============================================================================================
 	//	busrt相关参数
@@ -149,11 +142,20 @@ module frame_buffer # (
 	//	最大的burst的长度
 	//	可选 64 32 16 8 4 2 1。必须是2的n次方，最大是64。
 	//	-------------------------------------------------------------------------------------
-	localparam	MAX_BURST_LENGTH	= 32;
+	localparam	BURST_SIZE					= 32;
 	//	-------------------------------------------------------------------------------------
-	//	每次burst的数据量
+	//	MCB fifo 位宽的byte个数
 	//	-------------------------------------------------------------------------------------
-	localparam	MAX_BURST_BYTE		= MAX_BURST_LENGTH*DATA_WD/8;
+	localparam	MCB_BYTE_NUM				= DATA_WD/8;
+	//	-------------------------------------------------------------------------------------
+	//	MCB fifo 位宽的byte个数对应的位宽
+	//	-------------------------------------------------------------------------------------
+	localparam	MCB_BYTE_NUM_WIDTH			= log2(MCB_BYTE_NUM);
+	//	-------------------------------------------------------------------------------------
+	//	每次burst的数据量，以byte为单位
+	//	-------------------------------------------------------------------------------------
+	localparam	MCB_BURST_BYTE_NUM			= BURST_SIZE*MCB_BYTE_NUM;
+
 
 	//	===============================================================================================
 	//	地址相关参数
@@ -166,16 +168,18 @@ module frame_buffer # (
 	//	3. 2Gb   - 28
 	//	如果定义错误，则按照1Gb的方式定义位宽，因为现在默认是1Gb
 	//	-------------------------------------------------------------------------------------
-	localparam	BYTE_ADDR_WD	= (DDR3_MEM_DENSITY=="512Mb") ? 26 : ((DDR3_MEM_DENSITY=="2Gb") ? 28 : 27);
+	localparam	BYTE_ADDR_WIDTH		= (DDR3_MEM_DENSITY=="512Mb") ? 26 : ((DDR3_MEM_DENSITY=="2Gb") ? 28 : 27);
 	//	-------------------------------------------------------------------------------------
 	//	MCB BYTE ADDR 低位为0的个数
 	//	-------------------------------------------------------------------------------------
-	localparam	ADDR_DUMMY_BIT		= log2(MAX_BURST_BYTE);
+	localparam	MCB_BURST_BYTE_NUM_WIDTH		= log2(MCB_BURST_BYTE_NUM);
+
 	//	-------------------------------------------------------------------------------------
 	//	读写计数器 wr_addr rd_addr 的最大位宽
 	//	考虑到单帧的情况，byte addr只由 wr_addr 决定，与 wr_ptr 无关，因此 wr_addr 的最大位宽=实际有效的位宽
 	//	-------------------------------------------------------------------------------------
-	localparam	ADDR_WD			= BYTE_ADDR_WD-ADDR_DUMMY_BIT;
+	localparam	WR_ADDR_WIDTH				= BYTE_ADDR_WIDTH-MCB_BURST_BYTE_NUM_WIDTH;
+	localparam	RD_ADDR_WIDTH				= BYTE_ADDR_WIDTH-MCB_BYTE_NUM_WIDTH;
 
 	//	===============================================================================================
 	//	各个flag的地址分配，每个flag占用的数据量的单位是 一个 max burst 的数据量
@@ -194,7 +198,7 @@ module frame_buffer # (
 	//	trailer_final	{n(1'b1),1'b0}	36				(36/256)+1=1
 	//	-------------------------------------------------------------------------------------
 	//
-	//	2.帧存中的数据分布方式为，以MAX_BURST_LENGTH=32，MROI_MAX_NUM=8为例说明
+	//	2.帧存中的数据分布方式为，以MAX_BURST_LENGTH=64，MROI_MAX_NUM=8为例说明
 	//	-------------------------------------------------------------------------------------
 	//					addr			max_data		addr_size
 	//	-------------------------------------------------------------------------------------
@@ -213,34 +217,93 @@ module frame_buffer # (
 	//	leader的地址
 	//	-------------------------------------------------------------------------------------
 	localparam	LEADER_START_ADDR				= 0;
-	localparam	MAX_LEADER_SIZE					= 56;
-	localparam	MAX_LEADER_DATA					= MAX_LEADER_SIZE*MROI_MAX_NUM;
-	localparam	MAX_LEADER_ADDR_SIZE			= (MAX_LEADER_DATA/BURST_BYTE)+1;
+	localparam	EACH_LEADER_SIZE				= 52;
+
+	localparam	EACH_LEADER_SIZE_CEIL			= cdiv(EACH_LEADER_SIZE,MCB_BYTE_NUM)*MCB_BYTE_NUM;
+	localparam	LEADER_REMAINDER				= remain(EACH_LEADER_SIZE,MCB_BYTE_NUM);
+
+	localparam	MAX_LEADER_DATA					= EACH_LEADER_SIZE_CEIL*MROI_MAX_NUM;
+	localparam	MAX_LEADER_ADDR_SIZE			= cdiv(MAX_LEADER_DATA,MCB_BYTE_NUM);
+
+	localparam	MAX_LEADER_DATA_WIDTH			= log2(MAX_LEADER_DATA+1)-MCB_BYTE_NUM_WIDTH;
+
 	//	-------------------------------------------------------------------------------------
 	//	trailer的地址
 	//	-------------------------------------------------------------------------------------
 	localparam	TRAILER_START_ADDR				= LEADER_START_ADDR + MAX_LEADER_ADDR_SIZE;
-	localparam	MAX_TRAILER_SIZE				= 36;
-	localparam	MAX_TRAILER_DATA				= MAX_TRAILER_SIZE*MROI_MAX_NUM;
-	localparam	MAX_TRAILER_ADDR_SIZE			= (MAX_TRAILER_DATA/BURST_BYTE)+1;
-	//	-------------------------------------------------------------------------------------
-	//	image的地址
-	//	-------------------------------------------------------------------------------------
-	localparam	CHUNK_START_ADDR				= TRAILER_START_ADDR + MAX_TRAILER_ADDR_SIZE;
-	localparam	MAX_CHUNK_SIZE					= 40;
-	localparam	MAX_CHUNK_DATA					= MAX_CHUNK_SIZE*MROI_MAX_NUM;
-	localparam	MAX_CHUNK_ADDR_SIZE				= (MAX_CHUNK_DATA/BURST_BYTE)+1;
+	localparam	EACH_TRAILER_SIZE				= 32;
+	localparam	EACH_TRAILER_SIZE_CHUNK			= 36;
+
+	localparam	EACH_TRAILER_SIZE_CEIL			= cdiv(EACH_TRAILER_SIZE,MCB_BYTE_NUM)*MCB_BYTE_NUM;
+	localparam	EACH_TRAILER_SIZE_CHUNK_CEIL	= cdiv(EACH_TRAILER_SIZE_CHUNK,MCB_BYTE_NUM)*MCB_BYTE_NUM;
+
+	localparam	TRAILER_REMAINDER				= remain(EACH_TRAILER_SIZE,MCB_BYTE_NUM);
+	localparam	TRAILER_CHUNK_REMAINDER			= remain(EACH_TRAILER_SIZE_CHUNK,MCB_BYTE_NUM);
+
+	localparam	MAX_TRAILER_DATA				= EACH_TRAILER_SIZE_CHUNK_CEIL*MROI_MAX_NUM;
+	localparam	MAX_TRAILER_ADDR_SIZE			= cdiv(MAX_TRAILER_DATA,MCB_BYTE_NUM);
+
+	localparam	MAX_TRAILER_DATA_WIDTH			= log2(MAX_TRAILER_DATA+1)-MCB_BYTE_NUM_WIDTH;
+
 	//	-------------------------------------------------------------------------------------
 	//	chunk的地址
 	//	-------------------------------------------------------------------------------------
+	localparam	CHUNK_START_ADDR				= TRAILER_START_ADDR + MAX_TRAILER_ADDR_SIZE;
+	localparam	EACH_CHUNK_SIZE					= 40;
+	localparam	CHUNK_REMAINDER					= 1'b0;
+	localparam	MAX_CHUNK_DATA					= EACH_CHUNK_SIZE*MROI_MAX_NUM;
+	localparam	MAX_CHUNK_ADDR_SIZE				= cdiv(MAX_CHUNK_DATA,MCB_BYTE_NUM);
+
+	localparam	MAX_CHUNK_DATA_WIDTH			= log2(MAX_CHUNK_DATA+1)-MCB_BYTE_NUM_WIDTH;
+
+	//	-------------------------------------------------------------------------------------
+	//	image的地址
+	//	-------------------------------------------------------------------------------------
 	localparam	IMAGE_START_ADDR				= CHUNK_START_ADDR + MAX_CHUNK_ADDR_SIZE;
+
 	//	-------------------------------------------------------------------------------------
 	//	trailer_final的地址
 	//	-------------------------------------------------------------------------------------
-	localparam	MAX_TRAILER_FINAL_SIZE			= 36;
-	localparam	MAX_TRAILER_FINAL_DATA			= MAX_TRAILER_FINAL_SIZE*1;
-	localparam	MAX_TRAILER_FINAL_ADDR_SIZE		= (MAX_TRAILER_FINAL_DATA/BURST_BYTE)+1;
-	localparam	TRAILER_FINAL_START_ADDR		= {(ADDR_WD-MAX_TRAILER_FINAL_ADDR_SIZE){1'b1},(MAX_TRAILER_FINAL_ADDR_SIZE){1'b0}};
+	localparam	MAX_TRAILER_FINAL_DATA			= EACH_TRAILER_SIZE_CHUNK_CEIL*1;
+	localparam	MAX_TRAILER_FINAL_ADDR_SIZE		= cdiv(MAX_TRAILER_FINAL_DATA,MCB_BYTE_NUM);
+	localparam	TRAILER_FINAL_START_ADDR		= {{(WR_ADDR_WIDTH-MAX_TRAILER_FINAL_ADDR_SIZE){1'b1}},{(MAX_TRAILER_FINAL_ADDR_SIZE){1'b0}}};
+
+	//	===============================================================================================
+	//	计数器的位宽计算
+	//	===============================================================================================
+	//  -------------------------------------------------------------------------------------
+	//	所有leader数据量之和 / 8，单位是byte
+	//  -------------------------------------------------------------------------------------
+	localparam	MAX_LEADER_DATA_DIV8		= cdiv(MAX_LEADER_DATA,8);
+	//  -------------------------------------------------------------------------------------
+	//	image数据量 / 8，单位是byte
+	//  -------------------------------------------------------------------------------------
+	localparam	MAX_IMAGE_DATA_DIV8			= SENSOR_ALL_PIX_DIV4;
+	//	-------------------------------------------------------------------------------------
+	//	一个flag的最大数据量取决于 leader和image谁大
+	//	-------------------------------------------------------------------------------------
+	localparam	MAX_FLAG_DATA_DIV8			= (MAX_LEADER_DATA_DIV8>=MAX_IMAGE_DATA_DIV8) ? MAX_LEADER_DATA_DIV8 : MAX_IMAGE_DATA_DIV8;
+	//	-------------------------------------------------------------------------------------
+	//	flag 中数据计数器的位宽
+	//	1.log2(MAX_FLAG_DATA_DIV8+1)+3 表示在10/12像素格式下，sensor最大的数据量，所需要的位宽
+	//	2.-MCB_BYTE_NUM_WIDTH 由于MCB不是以1个byte位单位，因此还要减去MCB的位宽
+	//	-------------------------------------------------------------------------------------
+	localparam	WORD_CNT_FLAG_WIDTH			= log2(cdiv(MAX_FLAG_DATA_DIV8,MCB_BURST_BYTE_NUM)*MCB_BURST_BYTE_NUM+1)+3-MCB_BYTE_NUM_WIDTH;
+	//	-------------------------------------------------------------------------------------
+	//	line 中数据计数器的位宽
+	//	1.log2(SENSOR_MAX_WIDTH*2+1) 表示在10/12像素格式下，sensor一行的最大数据量，所需要的位宽
+	//	2.-MCB_BYTE_NUM_WIDTH 由于MCB不是以1个byte位单位，因此还要减去MCB的位宽
+	//	-------------------------------------------------------------------------------------
+	localparam	WORD_CNT_LINE_WIDTH			= log2(cdiv(SENSOR_MAX_WIDTH*2,MCB_BURST_BYTE_NUM)*MCB_BURST_BYTE_NUM+1)-MCB_BYTE_NUM_WIDTH;
+	//	-------------------------------------------------------------------------------------
+	//	burst 中数据计数器的位宽
+	//	1.以 n byte 为单位
+	//	-------------------------------------------------------------------------------------
+	localparam	WORD_CNT_WIDTH				= log2(BURST_SIZE);
+	//	-------------------------------------------------------------------------------------
+	//	chunk大小的位宽
+	//	-------------------------------------------------------------------------------------
+	localparam	CHUNK_SIZE_WIDTH			= log2(EACH_CHUNK_SIZE+1);
 
 	//	===============================================================================================
 	//	其他参数
@@ -248,11 +311,21 @@ module frame_buffer # (
 	//	-------------------------------------------------------------------------------------
 	//	mask size
 	//	-------------------------------------------------------------------------------------
-	localparam	DDR3_MASK_SIZE	= DATA_WD/8;
+	localparam	DDR3_MASK_SIZE	= MCB_BYTE_NUM;
 	//	-------------------------------------------------------------------------------------
 	//	DDR3时钟周期
 	//	-------------------------------------------------------------------------------------
 	localparam	DDR3_MEMCLK_PERIOD	= 1000000/DDR3_MEMCLK_FREQ	;
+	//	-------------------------------------------------------------------------------------
+	//	读模块中的flag的个数，是4个
+	//	分别是 leader image chunk trailer
+	//	-------------------------------------------------------------------------------------
+	localparam	FLAG_NUM			= 4;
+
+
+
+
+	//	ref functions
 	//	-------------------------------------------------------------------------------------
 	//	取对数，上取整
 	//	-------------------------------------------------------------------------------------
@@ -265,6 +338,103 @@ module frame_buffer # (
 			end
 		end
 	endfunction
+
+	//	-------------------------------------------------------------------------------------
+	//	除法上取整
+	//	-------------------------------------------------------------------------------------
+	function integer cdiv;
+		input integer	dividend;	//被除数
+		input integer	divisior;	//除数
+		integer			division;	//商
+
+		begin
+			//此处的除法是下取整
+			division	= dividend/divisior;
+			//如果 商*除数=被除数 ，则是整除。否则，存在省略的小数部分，商要加1
+			cdiv		= (division*divisior==dividend) ? division : division+1;
+		end
+	endfunction
+
+	//	-------------------------------------------------------------------------------------
+	//	判断除法是否有余数。0：没有余数 1：有余数
+	//	-------------------------------------------------------------------------------------
+	function [0:0] remain;
+		input integer	dividend;	//被除数
+		input integer	divisior;	//除数
+		integer			division;	//商
+		begin
+			//此处的除法是下取整
+			division	= dividend/divisior;
+			//如果 商*除数=被除数 ，则是整除。否则，存在省略的小数部分，则非整除。
+			remain		= (division*divisior==dividend) ? 1'b0 : 1'b1;
+		end
+	endfunction
+
+
+
+
+
+
+	//	ref ARCHITECTURE
+
+	wrap_wr_logic # (
+	.DATA_WD						(DATA_WD						),
+	.DDR3_MEM_DENSITY				(DDR3_MEM_DENSITY				),
+	.DDR3_MASK_SIZE					(DDR3_MASK_SIZE					),
+	.BURST_SIZE						(BURST_SIZE						),
+	.PTR_WIDTH						(PTR_WIDTH						),
+	.WR_ADDR_WIDTH					(WR_ADDR_WIDTH					),
+	.WORD_CNT_WIDTH					(WORD_CNT_WIDTH					),
+	.MCB_BURST_BYTE_NUM_WIDTH		(MCB_BURST_BYTE_NUM_WIDTH		),
+	.SENSOR_MAX_WIDTH				(SENSOR_MAX_WIDTH				),
+	.LEADER_START_ADDR				(LEADER_START_ADDR				),
+	.TRAILER_START_ADDR				(TRAILER_START_ADDR				),
+	.CHUNK_START_ADDR				(CHUNK_START_ADDR				),
+	.IMAGE_START_ADDR				(IMAGE_START_ADDR				),
+	.TRAILER_FINAL_START_ADDR		(TRAILER_FINAL_START_ADDR		),
+	.REG_WD							(REG_WD							)
+	)
+	wrap_wr_logic_inst (
+	.clk_in							(clk_in							),
+	.i_fval							(i_fval							),
+	.i_dval							(i_dval							),
+	.i_leader_flag					(i_leader_flag					),
+	.i_image_flag					(i_image_flag					),
+	.i_chunk_flag					(i_chunk_flag					),
+	.i_trailer_flag					(i_trailer_flag					),
+	.iv_image_din					(iv_image_din					),
+	.o_front_fifo_overflow			(o_front_fifo_overflow			),
+	.clk							(clk_frame_buf					),
+	.reset							(reset_frame_buf				),
+	.ov_wr_ptr						(wv_wr_ptr						),
+	.ov_wr_addr						(wv_wr_addr						),
+	.o_wr_ptr_change				(w_wr_ptr_change				),
+	.iv_rd_ptr						(wv_rd_ptr						),
+	.i_reading						(w_reading						),
+	.o_writing						(w_writing						),
+	.i_stream_enable				(i_stream_enable				),
+	.iv_frame_depth					(iv_frame_depth					),
+	.ov_frame_depth					(wv_frame_depth					),
+	.i_calib_done					(i_calib_done					),
+	.o_wr_cmd_en					(w_wr_cmd_en					),
+	.ov_wr_cmd_instr				(wv_wr_cmd_instr				),
+	.ov_wr_cmd_bl					(wv_wr_cmd_bl					),
+	.ov_wr_cmd_byte_addr			(wv_wr_cmd_byte_addr			),
+	.i_wr_cmd_empty					(w_wr_cmd_empty					),
+	.i_wr_cmd_full					(w_wr_cmd_full					),
+	.o_wr_en						(w_wr_en						),
+	.ov_wr_mask						(wv_wr_mask						),
+	.ov_wr_data						(wv_wr_data						),
+	.i_wr_full						(w_wr_full						)
+	);
+
+
+
+
+
+
+
+
 
 
 endmodule
