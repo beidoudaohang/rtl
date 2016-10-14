@@ -10,7 +10,7 @@
 ##-------------------------------------------------------------------------------------------------
 
 ##	===============================================================================================
-##	ref ***Do Not Modify Here***
+##	ref ***准备工作***
 ##	===============================================================================================
 ##	-------------------------------------------------------------------------------------
 ##	首先先把define.do 跑一遍
@@ -54,7 +54,7 @@ echo	"simulation start ******"
 #vsim -t ps -novopt +notimingchecks -L machxo2 work.tb_$TB_MODULE
 
 ##	===============================================================================================
-##	ref ***Modify Here,Each Vsim May Be Variable***
+##	ref ***启动仿真，根据不同的被测模块，仿真命令可能要微调***
 ##	===============================================================================================
 ##	-------------------------------------------------------------------------------------
 ##	前仿真与后仿真的命令是不同的
@@ -62,33 +62,33 @@ echo	"simulation start ******"
 ##	-------------------------------------------------------------------------------------
 if { $SIM_MODE == "back" } {
 	#	vsim -t ps -voptargs="+acc" +maxdelays -L unisims_ver -L simprims_ver -L secureip -lib work work.tb_$TB_MODULE glbl
-	#	vsim -t ps -novopt +notimingchecks +maxdelays -L unisims_ver -L simprims_ver -L secureip -L xilinxcorelib_ver -lib work work.tb_$TB_MODULE glbl
+	vsim -t ps -novopt +notimingchecks +maxdelays -L unisims_ver -L simprims_ver -L secureip -L xilinxcorelib_ver -lib work work.glbl harness $TESTCASE\
+	ddr3_model_c3
+
 	#	vcd file test.vcd
 	#	vcd add /tb_$TB_MODULE/top_frame_buffer_inst/*
 
-	if { $TB_MODULE == "template"} {
-		vsim -t ps -novopt +notimingchecks +maxdelays -L unisims_ver -L simprims_ver -L secureip -L xilinxcorelib_ver -lib work work.glbl harness $TESTCASE\
-		driver_mt9p031
-	} elseif {$TB_MODULE == "template1"} {
-		vsim -t ps -novopt +notimingchecks +maxdelays -L unisims_ver -L simprims_ver -L secureip -L xilinxcorelib_ver -lib work work.glbl harness $TESTCASE\
-		driver_mt9p031
-	} else {
-
-	}
-
 } else {
-	if {$TB_MODULE == "template" } {
-		vsim -t ns -novopt +notimingchecks -L unisims_ver -L secureip -L xilinxcorelib_ver work.glbl harness $TESTCASE
-#		driver_mt9p031
-	} elseif {$TB_MODULE == "template1" } {
-		vsim -t ns -novopt +notimingchecks -L unisims_ver -L secureip -L xilinxcorelib_ver work.glbl harness $TESTCASE monitor\
-		driver_mt9p031
-	} else {
+	if { $TB_MODULE == "mer"} {
+		vsim -t ps -novopt +notimingchecks -L unisims_ver -L secureip -L xilinxcorelib_ver work.glbl harness $TESTCASE\
+		driver_spi_master\
+		driver_hispi\
+		ddr3_model_c3 monitor_ddr3
+
+	} elseif {$TB_MODULE == "deser_hispi"} {
+		vsim -t ps -novopt +notimingchecks -L unisims_ver -L secureip -L xilinxcorelib_ver work.glbl harness $TESTCASE\
+		driver_hispi
+	} elseif {$TB_MODULE == "clock_reset"} {
+		vsim -t ps -novopt +notimingchecks -L unisims_ver -L secureip -L xilinxcorelib_ver work.glbl harness $TESTCASE
+	} elseif {$TB_MODULE == "deser_word_align" ||$TB_MODULE == "deser_hispi_if_new"} {
+		vsim -t ps -novopt +notimingchecks -L unisims_ver -L secureip -L xilinxcorelib_ver work.glbl harness $TESTCASE\
+		driver_hispi
+
 	}
 }
 
 ##	===============================================================================================
-##	ref ***Do Not Modify Following Parameter***
+##	ref ***仿真固定命令，不要修改***
 ##	===============================================================================================
 ##	-------------------------------------------------------------------------------------
 ##	新建波形文件

@@ -29,32 +29,32 @@
 
 module wrap_rd_logic # (
 	parameter	DATA_WD										= 64		,	//输出数据位宽，这里使用同一宽度
-	parameter	GPIF_DATA_WD								= 32		,	//后端输出数据位宽
-
-	parameter	PTR_WIDTH									= 2			,	//读写指针的位宽，1-最大2帧 2-最大4帧 3-最大8帧 4-最大16帧 5-最大32帧
-	parameter	BURST_SIZE									= 32		,	//BURST_SIZE大小
 	parameter	DDR3_MEM_DENSITY							= "1Gb"		,	//DDR3 容量 "2Gb" "1Gb" "512Mb"
+	parameter	GPIF_DATA_WD								= 32		,	//后端输出数据位宽
+	parameter	BURST_SIZE									= 32		,	//BURST_SIZE大小
+
+	parameter	PTR_WIDTH									= 2			,	//读写指针的位宽，1-最大1帧 2-最大3帧 3-最大7帧 4-最大15帧 5-最大31帧 ... 16-最大65535帧
+	parameter	WR_ADDR_WIDTH   							= 21		,	//帧内写地址位宽
+	parameter	RD_ADDR_WIDTH								= 24		,	//帧内读地址位宽
+	parameter	WORD_CNT_WIDTH								= 5			,	//word cnt 位宽
+	parameter	WORD_CNT_LINE_WIDTH							= 11		,	//每一行计数器的位宽
+	parameter	WORD_CNT_FLAG_WIDTH							= 23		,	//每个flag计数器的位宽
+
+	parameter	BYTE_ADDR_WIDTH								= 27		,	//有效地址位宽，DDR3容量不同，位宽不同
+	parameter	CHUNK_SIZE_WIDTH							= 6			,	//chunk size位宽
+	parameter	MCB_BYTE_NUM_WIDTH							= 3			,	//mcb 数据宽度对应的位宽
+
+	parameter	LEADER_ADDR_WIDTH							= 6			,	//leader addr 的计数器位宽
+	parameter	CHUNK_ADDR_WIDTH							= 6			,	//chunk addr 的计数器位宽
+
 	parameter	LEADER_START_ADDR							= 0			,	//leader的首地址
 	parameter	TRAILER_START_ADDR							= 2			,	//trailer的首地址
 	parameter	CHUNK_START_ADDR							= 4			,	//chunk的首地址
 	parameter	IMAGE_START_ADDR							= 6			,	//image的首地址
-	parameter	TRAILER_FINAL_START_ADDR					= 254		,	//trailer_final的首地址
+	parameter	TRAILER_FINAL_START_ADDR					= {{19{1'b1}},8'b0}		,	//trailer_final的首地址
+
 	parameter	MROI_MAX_NUM 								= 8			,	//Multi-ROI的最大个数
-	parameter	SENSOR_MAX_WIDTH							= 4912		,	//Sensor最大的行有效宽度，以像素时钟为单位
-	parameter	WORD_CNT_FLAG_WIDTH							= 20		,	//每个flag计数器的位宽
-	parameter	WORD_CNT_LINE_WIDTH							= 14		,	//每一行计数器的位宽
-	parameter	WORD_CNT_WIDTH								= 5			,	//word cnt 位宽
-	parameter	BYTE_ADDR_WIDTH								= 27		,	//有效地址位宽，DDR3容量不同，位宽不同
-	parameter	FLAG_NUM									= 4			,	//flag的个数
-	parameter	CHUNK_SIZE_WIDTH							= 6			,	//chunk size位宽
-	parameter	MCB_BYTE_NUM_WIDTH							= 3			,	//mcb 数据宽度对应的位宽
-
-	parameter	MAX_LEADER_DATA_WIDTH						= 6			,	//leader addr 的计数器位宽
-	parameter	MAX_TRAILER_DATA_WIDTH						= 6			,	//trailer addr 的计数器位宽
-	parameter	MAX_CHUNK_DATA_WIDTH						= 6			,	//chunk addr 的计数器位宽
-
-	parameter	WR_ADDR_WIDTH   							= 21		,	//帧内写地址位宽
-	parameter	RD_ADDR_WIDTH								= 27		,	//帧内读地址位宽
+	parameter	RD_FLAG_NUM									= 4			,	//读flag的个数
 
 	parameter	EACH_LEADER_SIZE_CEIL						= 56		,
 	parameter	EACH_CHUNK_SIZE								= 40		,
@@ -65,9 +65,6 @@ module wrap_rd_logic # (
 	parameter	TRAILER_REMAINDER							= 1'b0		,
 	parameter	TRAILER_CHUNK_REMAINDER						= 1'b1		,
 
-
-
-
 	parameter	SHORT_REG_WD  								= 16		,	//短寄存器位宽
 	parameter	REG_WD  									= 32			//寄存器位宽
 	)
@@ -77,7 +74,7 @@ module wrap_rd_logic # (
 	//	===============================================================================================
 	input										clk_out					,	//后级时钟，同U3_ITERFACE 模块时钟域
 	input										i_buf_rd				,	//后级模块读使能，高有效，clk_out时钟域
-	output										o_buf_empty				,	//后级FIFO空信号，高有效，clk_out时钟域
+	output										o_back_buf_empty		,	//后级FIFO空信号，高有效，clk_out时钟域
 	output	[GPIF_DATA_WD:0]					ov_dout					,	//后级FIFO数据输出，宽度32bit
 	//	===============================================================================================
 	//	帧缓存工作时钟域
@@ -85,7 +82,6 @@ module wrap_rd_logic # (
 	//	-------------------------------------------------------------------------------------
 	//	多ROI寄存器
 	//	-------------------------------------------------------------------------------------
-	input										iv_multi_roi_global_en	,	//Multi-ROI 全局使能
 	input	[MROI_MAX_NUM*REG_WD-1:0]			iv_payload_size_mroi	,	//Multi-ROI payload size 集合
 	input	[MROI_MAX_NUM*REG_WD-1:0]			iv_image_size_mroi		,	//Multi-ROI image size 集合
 	input	[MROI_MAX_NUM*SHORT_REG_WD-1:0]		iv_roi_pic_width		,	//sensor输出图像的总宽度
@@ -96,18 +92,17 @@ module wrap_rd_logic # (
 	//  -------------------------------------------------------------------------------------
 	input										clk						,	//MCB 工作时钟
 	input										reset					,	//clk时钟域复位信号
-	input										i_wr_ptr_change			,	//写指针正在改变信号，宽度为2个时钟周期，在第二个时钟周期改变写指针
 	input	[PTR_WIDTH-1:0]						iv_wr_ptr				,	//写指针
 	input	[WR_ADDR_WIDTH-1:0]					iv_wr_addr				,	//写地址,应该是命令生效之后的写地址
 	output	[PTR_WIDTH-1:0]						ov_rd_ptr				,	//读指针
-	input										i_writing				,	//正在读
+	input										i_writing				,	//正在写
+	output										o_reading				,	//正在读
 	//  -------------------------------------------------------------------------------------
 	//  控制数据
 	//  -------------------------------------------------------------------------------------
 	input										i_stream_enable			,	//流停止信号，clk时钟域，信号有效时允许数据完整帧写入帧存，无效时立即停止写入，并复位读写地址指针，清帧存
 	input	[REG_WD-1:0]						iv_pixel_format			,	//像素格式寄存器
 	input	[PTR_WIDTH-1:0]						iv_frame_depth			,	//帧缓存深度，已同步,wrap_wr_logic模块已做生效时机控制
-	input	[BYTE_ADDR_WIDTH-1:0]				iv_payload_size			,	//帧缓存大小，以Byte为单位
 	input										i_wr_ptr_changing		,	//写指针正在变化信号，此时读指针不能变化
 	input										i_chunk_mode_active		,	//chunk总开关，chunk开关影响leader和trailer的大小，通过判断chunk开关可以知道leader和trailer长度
 	//  -------------------------------------------------------------------------------------
@@ -130,7 +125,7 @@ module wrap_rd_logic # (
 
 	//	ref signals
 	localparam	ROI_CNT_WIDTH				= log2(MROI_MAX_NUM);
-	localparam	FLAG_CNT_WIDTH				= log2(FLAG_NUM);
+	localparam	FLAG_CNT_WIDTH				= log2(RD_FLAG_NUM);
 
 	//FSM Parameter Define
 	parameter	S_IDLE		= 3'd0;
@@ -247,8 +242,8 @@ module wrap_rd_logic # (
 	//	-------------------------------------------------------------------------------------
 	//	divide roi
 	//	-------------------------------------------------------------------------------------
-	wire	[SHORT_REG_WD-1:0]										roi_pic_width_ch[MROI_MAX_NUM-1:0]	;	//重新划分通道
-	wire	[SHORT_REG_WD-1:0]										roi_pic_width_format_temp			;	//当前的宽度，如果像素格式不是8，则*2
+	wire	[WORD_CNT_LINE_WIDTH+MCB_BYTE_NUM_WIDTH-1:0]			roi_pic_width_ch[MROI_MAX_NUM-1:0]	;	//重新划分通道
+	wire	[WORD_CNT_LINE_WIDTH+MCB_BYTE_NUM_WIDTH-1:0]			roi_pic_width_format_temp			;	//当前的宽度，如果像素格式不是8，则*2
 	wire	[WORD_CNT_LINE_WIDTH+MCB_BYTE_NUM_WIDTH-1:0]			roi_pic_width_format				;	//当前的宽度，如果像素格式不是8，则*2
 	wire	[REG_WD-1:0]											payload_size_ch[MROI_MAX_NUM-1:0]	;	//重新划分通道
 	wire	[REG_WD-1:0]											image_size_ch[MROI_MAX_NUM-1:0]		;	//重新划分通道
@@ -275,23 +270,22 @@ module wrap_rd_logic # (
 	//	-------------------------------------------------------------------------------------
 	reg		[PTR_WIDTH-1:0]					rd_ptr				= 'b0;
 	reg		[RD_ADDR_WIDTH-1:0]				rd_addr				= 'b0;
-	reg		[MAX_LEADER_DATA_WIDTH-1:0]		leader_addr			= 'b0;
-	reg		[MAX_TRAILER_DATA_WIDTH-1:0]	trailer_addr		= 'b0;
-	reg		[MAX_CHUNK_DATA_WIDTH-1:0]		chunk_addr			= 'b0;
-	reg		[RD_ADDR_WIDTH+MCB_BYTE_NUM_WIDTH-1:0]			image_addr			= 'b0;
+	reg		[LEADER_ADDR_WIDTH-1:0]			leader_addr			= 'b0;
+	reg		[BYTE_ADDR_WIDTH-1:0]			trailer_addr		= 'b0;
+	reg		[CHUNK_ADDR_WIDTH-1:0]			chunk_addr			= 'b0;
+	reg		[BYTE_ADDR_WIDTH-1:0]			image_addr			= 'b0;
 
 	//	-------------------------------------------------------------------------------------
 	//	word cnt
 	//	-------------------------------------------------------------------------------------
 	reg		[WORD_CNT_WIDTH-1:0]			word_cnt			= 'b0;	//单位是 n byte,n 是mcb fifo 的宽度
-	reg		[WORD_CNT_LINE_WIDTH-1:0]		word_cnt_line		= 'b0;	//单位是 n byte,n 是mcb fifo 的宽度
-	reg		[WORD_CNT_FLAG_WIDTH-1:0]		word_cnt_flag		= 'b0;	//单位是 n byte,n 是mcb fifo 的宽度
+	reg		[WORD_CNT_LINE_WIDTH-1:0]		word_cnt_line		= 1;	//单位是 n byte,n 是mcb fifo 的宽度
+	reg		[WORD_CNT_FLAG_WIDTH-1:0]		word_cnt_flag		= 1;	//单位是 n byte,n 是mcb fifo 的宽度
 
 	//	-------------------------------------------------------------------------------------
 	//	num cnt
 	//	-------------------------------------------------------------------------------------
 	reg		[FLAG_CNT_WIDTH-1:0]			flag_num_cnt		= 'b0;
-	reg		[ROI_CNT_WIDTH-1:0]				roi_num_cnt			= 'b0;
 
 	//	-------------------------------------------------------------------------------------
 	//	size
@@ -312,8 +306,12 @@ module wrap_rd_logic # (
 	//	fsm flag
 	//	-------------------------------------------------------------------------------------
 	wire									burst_done			;			//一个burst数据量足够
-	reg										line_done			= 1'b0;		//一行数据量足够
-	reg										flag_done			= 1'b0;		//一flag数据量足够
+	wire									line_done			;			//一行数据量足够
+	reg										flag_done_reg		= 1'b0;		//一行数据量足够
+	wire									flag_done_int		;			//一行数据量足够组合
+	wire									flag_done			;			//一flag数据量足够
+	reg										line_done_reg		= 1'b0;		//一flag数据量足够
+	wire									line_done_int		;			//一flag数据量足够组合
 	wire									line_equal			;			//当前roi的宽度是否与总宽度相等
 	wire									last_flag			;			//最后一个flag标志位
 
@@ -325,6 +323,10 @@ module wrap_rd_logic # (
 
 	reg										reading_reg 		= 1'b0;
 	reg										fresh_frame 		= 1'b0;
+
+
+
+
 
 
 
@@ -525,7 +527,7 @@ module wrap_rd_logic # (
 	.din			(fifo_din			),
 	.rd_clk			(clk_out			),
 	.rd_en			(i_buf_rd			),
-	.empty			(o_buf_empty		),
+	.empty			(o_back_buf_empty	),
 	.dout			(ov_dout			)
 	);
 
@@ -542,7 +544,8 @@ module wrap_rd_logic # (
 	//	2.一行没有结束
 	//	3.一个flag没有结束
 	//	-------------------------------------------------------------------------------------
-	assign	fifo_wr_en	= (mcb_rd_en==1'b1 && line_done==1'b0 && flag_done==1'b0) ? 1'b1 : 1'b0;
+	//	assign	fifo_wr_en	= (mcb_rd_en==1'b1 && line_done==1'b0 && flag_done==1'b0) ? 1'b1 : 1'b0;
+	assign	fifo_wr_en	= (mcb_rd_en==1'b1 && line_done_int==1'b0 && flag_done_int==1'b0) ? 1'b1 : 1'b0;
 
 	//	-------------------------------------------------------------------------------------
 	//	fifo 输入数据
@@ -616,7 +619,7 @@ module wrap_rd_logic # (
 			//	-------------------------------------------------------------------------------------
 			//	只有在 PTR 状态和 wr_ptr_change=0的时候，才能改变读指针
 			//	-------------------------------------------------------------------------------------
-			if(current_state==S_PTR && i_wr_ptr_change==1'b0) begin
+			if(current_state==S_PTR && i_wr_ptr_changing==1'b0) begin
 				//	-------------------------------------------------------------------------------------
 				//	当多帧的时候，如果读指针!=写指针，说明有新的数据，那么读可以进入写
 				//	-------------------------------------------------------------------------------------
@@ -651,33 +654,33 @@ module wrap_rd_logic # (
 		//	在idle状态下，地址清零
 		//	-------------------------------------------------------------------------------------
 		if(current_state==S_IDLE) begin
-			rd_addr	<= leader_addr[MAX_LEADER_DATA_WIDTH-1:MCB_BYTE_NUM_WIDTH];
+			rd_addr	<= leader_addr[LEADER_ADDR_WIDTH-1:MCB_BYTE_NUM_WIDTH];
 		end
 		//	-------------------------------------------------------------------------------------
 		//	在 LINE 状态下，更新读地址
 		//	-------------------------------------------------------------------------------------
 		else if(current_state==S_LINE) begin
-			rd_addr	<= image_addr[RD_ADDR_WIDTH+MCB_BYTE_NUM_WIDTH-1:MCB_BYTE_NUM_WIDTH];
+			rd_addr	<= image_addr[BYTE_ADDR_WIDTH-1:MCB_BYTE_NUM_WIDTH];
 		end
 		//	-------------------------------------------------------------------------------------
 		//	在 FLAG 状态下，更新读地址
 		//	-------------------------------------------------------------------------------------
 		else if(current_state==S_FLAG) begin
 			if(flag_num_cnt==1) begin
-				rd_addr	<= image_addr[RD_ADDR_WIDTH+MCB_BYTE_NUM_WIDTH-1:MCB_BYTE_NUM_WIDTH];
+				rd_addr	<= image_addr[BYTE_ADDR_WIDTH-1:MCB_BYTE_NUM_WIDTH];
 			end
 			else if(flag_num_cnt==2) begin
-				rd_addr	<= chunk_addr[MAX_CHUNK_DATA_WIDTH-1:MCB_BYTE_NUM_WIDTH];
+				rd_addr	<= chunk_addr[CHUNK_ADDR_WIDTH-1:MCB_BYTE_NUM_WIDTH];
 			end
 			else if(flag_num_cnt==3) begin
-				rd_addr	<= trailer_addr[MAX_TRAILER_DATA_WIDTH-1:MCB_BYTE_NUM_WIDTH];
+				rd_addr	<= trailer_addr[BYTE_ADDR_WIDTH-1:MCB_BYTE_NUM_WIDTH];
 			end
 		end
 		//	-------------------------------------------------------------------------------------
 		//	在 ROI 状态下，更新读地址
 		//	-------------------------------------------------------------------------------------
 		else if(current_state==S_ROI) begin
-			rd_addr	<= leader_addr[MAX_LEADER_DATA_WIDTH-1:MCB_BYTE_NUM_WIDTH];
+			rd_addr	<= leader_addr[LEADER_ADDR_WIDTH-1:MCB_BYTE_NUM_WIDTH];
 		end
 		//	-------------------------------------------------------------------------------------
 		//	在其他状态下，当读命令发出之后，写地址自增
@@ -787,7 +790,7 @@ module wrap_rd_logic # (
 		//	2.在line状态，且pipe_cnt=1，此时要从line状态跳出，复位
 		//	-------------------------------------------------------------------------------------
 		if(current_state==S_IDLE || (current_state==S_LINE && pipe_cnt==1'b1)) begin
-			word_cnt_line	<= 'b0;
+			word_cnt_line	<= 1;
 		end
 		//	-------------------------------------------------------------------------------------
 		//	1.只有image flag期间计数
@@ -806,7 +809,7 @@ module wrap_rd_logic # (
 		//	2.在flag状态，且pipe_cnt=1，此时要从line状态跳出，复位
 		//	-------------------------------------------------------------------------------------
 		if(current_state==S_IDLE || (current_state==S_FLAG && pipe_cnt==1'b1)) begin
-			word_cnt_flag	<= 'b0;
+			word_cnt_flag	<= 1;
 		end
 		//	-------------------------------------------------------------------------------------
 		//	1.只有image flag期间计数
@@ -846,23 +849,23 @@ module wrap_rd_logic # (
 		end
 	end
 
-	//	-------------------------------------------------------------------------------------
-	//	roi_num_cnt
-	//	-------------------------------------------------------------------------------------
-	always @ (posedge clk) begin
-		//	-------------------------------------------------------------------------------------
-		//	只在idle状态复位
-		//	-------------------------------------------------------------------------------------
-		if(current_state==S_IDLE) begin
-			roi_num_cnt	<= 'b0;
-		end
-		//	-------------------------------------------------------------------------------------
-		//	1.当处于roi状态且pipe cnt=0，roi计数器自增
-		//	-------------------------------------------------------------------------------------
-		else if(current_state==S_ROI && pipe_cnt==1'b0) begin
-			roi_num_cnt	<= roi_num_cnt + 1'b1;
-		end
-	end
+	//	//	-------------------------------------------------------------------------------------
+	//	//	roi_num_cnt
+	//	//	-------------------------------------------------------------------------------------
+	//	always @ (posedge clk) begin
+	//		//	-------------------------------------------------------------------------------------
+	//		//	只在idle状态复位
+	//		//	-------------------------------------------------------------------------------------
+	//		if(current_state==S_IDLE) begin
+	//			roi_num_cnt	<= 'b0;
+	//		end
+	//		//	-------------------------------------------------------------------------------------
+	//		//	1.当处于roi状态且pipe cnt=0，roi计数器自增
+	//		//	-------------------------------------------------------------------------------------
+	//		else if(current_state==S_ROI && pipe_cnt==1'b0) begin
+	//			roi_num_cnt	<= roi_num_cnt + 1'b1;
+	//		end
+	//	end
 
 	//	===============================================================================================
 	//	ref ***size***
@@ -977,7 +980,9 @@ module wrap_rd_logic # (
 	//			: bit[7:1]	reserved
 	//	-------------------------------------------------------------------------------------
 	always @ (posedge clk) begin
-		if(flag_num_cnt==0 && word_cnt_flag==flag_word_size[WORD_CNT_FLAG_WIDTH+MCB_BYTE_NUM_WIDTH-1:MCB_BYTE_NUM_WIDTH]-1 && mcb_rd_en==1'b1) begin
+		//		if(flag_num_cnt==0 && word_cnt_flag==flag_word_size[WORD_CNT_FLAG_WIDTH+MCB_BYTE_NUM_WIDTH-1:MCB_BYTE_NUM_WIDTH]-1 && mcb_rd_en==1'b1) begin
+		//		if(flag_num_cnt==0 && word_cnt_flag[LEADER_ADDR_WIDTH-MCB_BYTE_NUM_WIDTH-1:0]==flag_word_size[LEADER_ADDR_WIDTH-1:MCB_BYTE_NUM_WIDTH] && mcb_rd_en==1'b1) begin
+		if(flag_num_cnt==0 && flag_done==1'b1) begin
 			roi_num		<= iv_rd_data[GPIF_DATA_WD+ROI_CNT_WIDTH-1:GPIF_DATA_WD];
 			last_roi	<= iv_rd_data[GPIF_DATA_WD+8];
 		end
@@ -998,42 +1003,52 @@ module wrap_rd_logic # (
 	//	1.当读最后一个数据的时候，就要拉高
 	//	2.由于一个burst的长度是固定的，因此读出的数据量可能会超过一行的长度
 	//	-------------------------------------------------------------------------------------
-	always @ ( * ) begin
-		if(word_cnt_line>=line_word_size[WORD_CNT_LINE_WIDTH+MCB_BYTE_NUM_WIDTH-1:MCB_BYTE_NUM_WIDTH]) begin
-			line_done	<= 1'b1;
+	assign	line_done	= (word_cnt_line==line_word_size[WORD_CNT_LINE_WIDTH+MCB_BYTE_NUM_WIDTH-1:MCB_BYTE_NUM_WIDTH] && mcb_rd_en==1'b1) ? 1'b1 : 1'b0;
+
+	always @ (posedge clk) begin
+		//	-------------------------------------------------------------------------------------
+		//	在 word_cnt_line 清零的时候，line_done_reg 也清零
+		//	-------------------------------------------------------------------------------------
+		if(current_state==S_IDLE || (current_state==S_LINE && pipe_cnt==1'b1)) begin
+			line_done_reg	<= 1'b0;
 		end
-		else if(word_cnt_line==line_word_size[WORD_CNT_LINE_WIDTH+MCB_BYTE_NUM_WIDTH-1:MCB_BYTE_NUM_WIDTH]-1 && mcb_rd_en==1'b1) begin
-			line_done	<= 1'b1;
-		end
-		else begin
-			line_done	<= 1'b0;
+		//	-------------------------------------------------------------------------------------
+		//	当line_done=1的时候，拉高
+		//	-------------------------------------------------------------------------------------
+		else if(line_done==1'b1) begin
+			line_done_reg	<= 1'b1;
 		end
 	end
+	assign	line_done_int	= line_done | line_done_reg;
 
 	//	-------------------------------------------------------------------------------------
 	//	flag_done 数据量是否满足一个flag
 	//	1.当读最后一个数据的时候，就要拉高
 	//	2.由于一个burst的长度是固定的，因此读出的数据量可能会超过一个flag的长度
 	//	-------------------------------------------------------------------------------------
-	always @ ( * ) begin
-		if(word_cnt_line>=flag_word_size[WORD_CNT_FLAG_WIDTH+MCB_BYTE_NUM_WIDTH-1:MCB_BYTE_NUM_WIDTH]) begin
-			flag_done	<= 1'b1;
+	assign	flag_done	= (word_cnt_flag==flag_word_size[WORD_CNT_FLAG_WIDTH+MCB_BYTE_NUM_WIDTH-1:MCB_BYTE_NUM_WIDTH] && mcb_rd_en==1'b1) ? 1'b1 : 1'b0;
+
+	always @ (posedge clk) begin
+		//	-------------------------------------------------------------------------------------
+		//	在 word_cnt_flag 复位的时候，同时 清零 flag_done_reg
+		//	-------------------------------------------------------------------------------------
+		if(current_state==S_IDLE || (current_state==S_FLAG && pipe_cnt==1'b1)) begin
+			flag_done_reg	<= 1'b0;
 		end
-		else if(word_cnt_line==flag_word_size[WORD_CNT_FLAG_WIDTH+MCB_BYTE_NUM_WIDTH-1:MCB_BYTE_NUM_WIDTH]-1 && mcb_rd_en==1'b1) begin
-			flag_done	<= 1'b1;
-		end
-		else begin
-			flag_done	<= 1'b0;
+		else if(flag_done==1'b1) begin
+			flag_done_reg	<= 1'b1;
 		end
 	end
+	assign	flag_done_int	= flag_done | flag_done_reg;
 
 
 	assign	line_equal		= (iv_roi_pic_width_mroi[roi_num]==iv_roi_pic_width) ? 1'b1 : 1'b0;
-	assign	last_flag		= (flag_num_cnt==FLAG_NUM-1) ? 1'b1 : 1'b0;
+	assign	last_flag		= (flag_num_cnt==RD_FLAG_NUM-1) ? 1'b1 : 1'b0;
 
 
-	assign	dummy_head		= (remainder_head==1'b1 && word_cnt_line==0) ? 1'b1 : 1'b0;
+	assign	dummy_head		= (remainder_head==1'b1 && word_cnt_line==1) ? 1'b1 : 1'b0;
 	assign	dummy_tail		= (remainder_tail==1'b1 && (line_done==1'b1 || flag_done==1'b1)) ? 1'b1 : 1'b0;
+	//	assign	dummy_tail		= (remainder_tail==1'b1 && (line_done_int==1'b1 || flag_done_int==1'b1)) ? 1'b1 : 1'b0;
 
 
 
@@ -1118,7 +1133,7 @@ module wrap_rd_logic # (
 		if(current_state==S_IDLE) begin
 			reading_reg	<= 1'b0;
 		end
-		else if(current_state==S_PTR && i_wr_ptr_change==1'b0) begin
+		else if(current_state==S_PTR && i_wr_ptr_changing==1'b0) begin
 			//	-------------------------------------------------------------------------------------
 			//	当单帧的时候，如果写刷新过，则可以读。否则，返回idle状态。
 			//	-------------------------------------------------------------------------------------
@@ -1144,6 +1159,7 @@ module wrap_rd_logic # (
 			end
 		end
 	end
+	assign	o_reading	= reading_reg;
 
 	//	===============================================================================================
 	//	ref ***FSM***
@@ -1182,7 +1198,7 @@ module wrap_rd_logic # (
 			//	wr_ptr_change信号的宽度是2个时钟周期，因此最多等待2个时钟周期
 			//	这样做的目的是防止读写指针同时变化
 			//	-------------------------------------------------------------------------------------
-			if(i_wr_ptr_change==1'b0) begin
+			if(i_wr_ptr_changing==1'b0) begin
 				//	-------------------------------------------------------------------------------------
 				//	当单帧的时候，如果写刷新过，则可以读。否则，返回idle状态。
 				//	-------------------------------------------------------------------------------------
@@ -1240,7 +1256,8 @@ module wrap_rd_logic # (
 			//	3.满足一行的数据量
 			//	4.开采
 			//	-------------------------------------------------------------------------------------
-			else if(i_stream_enable==1'b1 && flag_num_cnt==1 && burst_done==1'b1 && line_done==1'b1) begin
+			//			else if(i_stream_enable==1'b1 && flag_num_cnt==1 && burst_done==1'b1 && line_done==1'b1) begin
+			else if(i_stream_enable==1'b1 && flag_num_cnt==1 && burst_done==1'b1 && line_done_int==1'b1) begin
 				next_state	= S_LINE;
 			end
 			//	-------------------------------------------------------------------------------------
@@ -1251,7 +1268,8 @@ module wrap_rd_logic # (
 			//	4.当前ROI的行宽与总行宽相等
 			//	5.开采
 			//	-------------------------------------------------------------------------------------
-			else if(i_stream_enable==1'b1 && flag_num_cnt==1 && burst_done==1'b1 && flag_done==1'b1 && line_equal==1'b1) begin
+			//			else if(i_stream_enable==1'b1 && flag_num_cnt==1 && burst_done==1'b1 && flag_done==1'b1 && line_equal==1'b1) begin
+			else if(i_stream_enable==1'b1 && flag_num_cnt==1 && burst_done==1'b1 && flag_done_int==1'b1 && line_equal==1'b1) begin
 				next_state	= S_FLAG;
 			end
 			//	-------------------------------------------------------------------------------------
@@ -1261,7 +1279,8 @@ module wrap_rd_logic # (
 			//	3.满足一个flag的数据量
 			//	5.开采
 			//	-------------------------------------------------------------------------------------
-			else if(i_stream_enable==1'b1 && flag_num_cnt!=1 && burst_done==1'b1 && flag_done==1'b1) begin
+			//			else if(i_stream_enable==1'b1 && flag_num_cnt!=1 && burst_done==1'b1 && flag_done==1'b1) begin
+			else if(i_stream_enable==1'b1 && flag_num_cnt!=1 && burst_done==1'b1 && flag_done_int==1'b1) begin
 				next_state	= S_FLAG;
 			end
 			//	-------------------------------------------------------------------------------------
@@ -1275,14 +1294,16 @@ module wrap_rd_logic # (
 			//	LINE -> CMD
 			//	1.不满足一个flag的数据量
 			//	-------------------------------------------------------------------------------------
-			if(flag_done==1'b0 && pipe_cnt==1'b1) begin
+			//			if(flag_done==1'b0 && pipe_cnt==1'b1) begin
+			if(flag_done_int==1'b0 && pipe_cnt==1'b1) begin
 				next_state	= S_CMD;
 			end
 			//	-------------------------------------------------------------------------------------
 			//	LINE -> FLAG
 			//	1.满足一个flag的数据量
 			//	-------------------------------------------------------------------------------------
-			else if(flag_done==1'b1 && pipe_cnt==1'b1) begin
+			//			else if(flag_done==1'b1 && pipe_cnt==1'b1) begin
+			else if(flag_done_int==1'b1 && pipe_cnt==1'b1) begin
 				next_state	= S_FLAG;
 			end
 			else begin
