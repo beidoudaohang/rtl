@@ -35,7 +35,7 @@ if { [file exists vsim.wlf] == 1} {
 ##	-------------------------------------------------------------------------------------
 if {$wlf_vcd_exist == 1} {
 	noview wave
-	vsim -view vsim.wlf -do wave_$TB_MODULE.do
+	vsim -view vsim.wlf -do $WAVE_NAME
 	radix hex
 	view wave
 }
