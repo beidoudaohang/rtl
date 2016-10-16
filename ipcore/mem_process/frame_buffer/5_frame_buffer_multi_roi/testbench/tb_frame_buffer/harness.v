@@ -125,61 +125,47 @@ module harness ();
 	//	-------------------------------------------------------------------------------------
 	//	引入输入信号
 	//	-------------------------------------------------------------------------------------
-	assign	clk_sensor_pix		= `TESTCASE.clk_sensor_pix	;
-	assign	i_fval				= `TESTCASE.o_fval_sensor	;
-	assign	i_lval				= `TESTCASE.o_lval_sensor	;
-	assign	iv_pix_data			= `TESTCASE.ov_pix_data_sensor	;
-	assign	clk_pix				= `TESTCASE.clk_pix	;
+	assign	clk_sensor_pix				= `TESTCASE.clk_sensor_pix	;
+	assign	i_fval						= `TESTCASE.o_fval_sensor	;
+	assign	i_lval						= `TESTCASE.o_lval_sensor	;
+	assign	iv_pix_data					= `TESTCASE.ov_pix_data_sensor	;
+	assign	clk_pix						= `TESTCASE.clk_pix	;
 
-	assign	clk_in				= `TESTCASE.clk_in	;
-	assign	i_fval				= `TESTCASE.
-	assign	i_dval              = `TESTCASE.
-	assign	i_leader_flag       = `TESTCASE.
-	assign	i_image_flag        = `TESTCASE.
-	assign	i_chunk_flag        = `TESTCASE.
-	assign	i_trailer_flag      = `TESTCASE.
-	assign	iv_din						= `TESTCASE.
-	assign	clk_out						= `TESTCASE.
-	assign	i_buf_rd                    = `TESTCASE.
-	assign	clk_frame_buf               = `TESTCASE.
-	assign	reset_frame_buf             = `TESTCASE.
-	assign	i_stream_enable             = `TESTCASE.
-	assign	iv_pixel_format             = `TESTCASE.
-	assign	iv_frame_depth              = `TESTCASE.
-	assign	i_chunk_mode_active         = `TESTCASE.
-	assign	i_multi_roi_global_en       = `TESTCASE.
-	assign	iv_payload_size_mroi        = `TESTCASE.
-	assign	iv_image_size_mroi          = `TESTCASE.
-	assign	iv_roi_pic_width            = `TESTCASE.
-	assign	iv_roi_pic_width_mroi       = `TESTCASE.
-	assign	iv_start_mroi               = `TESTCASE.
-	assign	i_async_rst                 = `TESTCASE.
-	assign	i_sysclk_2x                 = `TESTCASE.
-	assign	i_sysclk_2x_180             = `TESTCASE.
-	assign	i_pll_ce_0                  = `TESTCASE.
-	assign	i_pll_ce_90                 = `TESTCASE.
-	assign	i_mcb_drp_clk               = `TESTCASE.
-	assign	i_bufpll_mcb_lock           = `TESTCASE.
-
-
+	assign	clk_in						= `TESTCASE.clk_in               ;
+	assign	i_fval						= `TESTCASE.i_fval               ;
+	assign	i_dval              		= `TESTCASE.i_dval               ;
+	assign	i_leader_flag       		= `TESTCASE.i_leader_flag        ;
+	assign	i_image_flag        		= `TESTCASE.i_image_flag         ;
+	assign	i_chunk_flag        		= `TESTCASE.i_chunk_flag         ;
+	assign	i_trailer_flag      		= `TESTCASE.i_trailer_flag       ;
+	assign	iv_din						= `TESTCASE.iv_din               ;
+	assign	clk_out						= `TESTCASE.clk_out              ;
+	assign	i_buf_rd                    = `TESTCASE.i_buf_rd             ;
+	assign	clk_frame_buf               = `TESTCASE.clk_frame_buf        ;
+	assign	reset_frame_buf             = `TESTCASE.reset_frame_buf      ;
+	assign	i_stream_enable             = `TESTCASE.i_stream_enable      ;
+	assign	iv_pixel_format             = `TESTCASE.iv_pixel_format      ;
+	assign	iv_frame_depth              = `TESTCASE.iv_frame_depth       ;
+	assign	i_chunk_mode_active         = `TESTCASE.i_chunk_mode_active  ;
+	assign	i_multi_roi_global_en       = `TESTCASE.i_multi_roi_global_en;
+	assign	iv_payload_size_mroi        = `TESTCASE.iv_payload_size_mroi ;
+	assign	iv_image_size_mroi          = `TESTCASE.iv_image_size_mroi   ;
+	assign	iv_roi_pic_width            = `TESTCASE.iv_roi_pic_width     ;
+	assign	iv_roi_pic_width_mroi       = `TESTCASE.iv_roi_pic_width_mroi;
+	assign	iv_start_mroi               = `TESTCASE.iv_start_mroi        ;
+	assign	i_async_rst                 = `TESTCASE.i_async_rst          ;
+	assign	i_sysclk_2x                 = `TESTCASE.i_sysclk_2x          ;
+	assign	i_sysclk_2x_180             = `TESTCASE.i_sysclk_2x_180      ;
+	assign	i_pll_ce_0                  = `TESTCASE.i_pll_ce_0           ;
+	assign	i_pll_ce_90                 = `TESTCASE.i_pll_ce_90          ;
+	assign	i_mcb_drp_clk               = `TESTCASE.i_mcb_drp_clk        ;
+	assign	i_bufpll_mcb_lock           = `TESTCASE.i_bufpll_mcb_lock    ;
 
 
-	assign	i_acquisition_start	= bfm_se_acq.i_acquisition_start	;
-	assign	i_stream_enable		= bfm_se_acq.i_stream_enable	;
-	assign	i_encrypt_state		= bfm_reg_common.i_encrypt_state	;
-	assign	iv_pixel_format		= bfm_reg_common.iv_pixel_format	;
-	assign	iv_test_image_sel	= bfm_reg_common.iv_test_image_sel	;
 
 	//	-------------------------------------------------------------------------------------
 	//	例化 bfm 模块
 	//	-------------------------------------------------------------------------------------
-	bfm_se_acq		bfm_se_acq();
-
-	bfm_reg_common # (
-	.REG_WD		(`TESTCASE.REG_WD	)
-	)
-	bfm_reg_common ();
-
 
 	//	-------------------------------------------------------------------------------------
 	//	例化 sync_buffer 模块
