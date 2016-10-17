@@ -1,0 +1,83 @@
+#--  Synopsys, Inc.
+#--  Version J-2015.03
+#--  Project file F:\DAHENG\hw_mer\branches\xinghaotao\u3v\mer-131-210u3x-multi-roi\fpga_module\frame_buffer\synplify\frame_buffer\proj_1.prj
+#--  Written on Fri Oct 14 18:15:54 2016
+
+
+#project files
+add_file -verilog "../../src/wrap_rd_logic.v"
+add_file -verilog "../../src/wrap_wr_logic.v"
+add_file -verilog "../../src/mig_core/ip/mig_core/user_design/rtl/memc_wrapper.v"
+add_file -verilog "../../src/mig_core/ip/mig_core/user_design/rtl/mig_core.v"
+add_file -verilog "../../src/mig_core/ip/mig_core/user_design/rtl/mcb_controller/iodrp_controller.v"
+add_file -verilog "../../src/mig_core/ip/mig_core/user_design/rtl/mcb_controller/iodrp_mcb_controller.v"
+add_file -verilog "../../src/mig_core/ip/mig_core/user_design/rtl/mcb_controller/mcb_raw_wrapper.v"
+add_file -verilog "../../src/mig_core/ip/mig_core/user_design/rtl/mcb_controller/mcb_soft_calibration.v"
+add_file -verilog "../../src/mig_core/ip/mig_core/user_design/rtl/mcb_controller/mcb_soft_calibration_top.v"
+add_file -verilog "../../src/mig_core/ip/mig_core/user_design/rtl/mcb_controller/mcb_ui_top.v"
+add_file -verilog "../../src/frame_buf_front_fifo/frame_buf_front_fifo_w69d256_pe128.v"
+add_file -verilog "../../src/frame_buf_front_fifo/frame_buf_front_fifo_w69d512_pe256.v"
+add_file -verilog "../../src/frame_buf_front_fifo/frame_buf_front_fifo_w69d1024_pe512.v"
+add_file -verilog "../../src/frame_buf_front_fifo/frame_buf_front_fifo_w69d2048_pe1024.v"
+add_file -verilog "../../src/frame_buf_back_fifo/frame_buf_back_fifo_ww66wd512rw33wd1024_pf440.v"
+add_file -verilog "../../src/frame_buffer.v"
+
+
+#implementation: "rev_1"
+impl -add rev_1 -type fpga
+
+#
+#implementation attributes
+
+set_option -vlog_std sysv
+set_option -project_relative_includes 1
+
+#device options
+set_option -technology Spartan6
+set_option -part XC6SLX9
+set_option -package CSG225
+set_option -speed_grade -2
+set_option -part_companion ""
+
+#compilation/mapping options
+set_option -use_fsm_explorer 0
+
+# mapper_options
+set_option -frequency auto
+set_option -write_verilog 1
+set_option -write_vhdl 0
+set_option -srs_instrumentation 1
+
+# xilinx_options
+set_option -rw_check_on_ram 1
+
+# Xilinx Spartan3
+set_option -run_prop_extract 1
+set_option -maxfan 10000
+set_option -disable_io_insertion 0
+set_option -pipe 1
+set_option -retiming 0
+set_option -update_models_cp 0
+set_option -fix_gated_and_generated_clocks 1
+set_option -no_sequential_opt 0
+
+# Xilinx Spartan6
+set_option -enable_prepacking 1
+
+# sequential_optimization_options
+set_option -symbolic_fsm_compiler 1
+
+# Compiler Options
+set_option -compiler_compatible 0
+set_option -resource_sharing 1
+set_option -multi_file_compilation_unit 1
+
+# Compiler Options
+set_option -auto_infer_blackbox :%PROD=all_protocert?1:0
+
+#automatic place and route (vendor) options
+set_option -write_apr_constraint 1
+
+#set result format/file last
+project -result_file "./rev_1/proj_1.edf"
+impl -active "rev_1"
