@@ -22,14 +22,19 @@ set	SIM_MODE	"behav"
 ##	1.每一个DUT都有一个独立的顶层
 ##	2.根据被测试对象，选择性编译文件，选择性仿真文件
 ##	-------------------------------------------------------------------------------------
-set TB_MODULE	"frame_buffer"
+#set TB_MODULE	"frame_buffer"
+set TB_MODULE	"fb_gpif"
 
 ##	-------------------------------------------------------------------------------------
 ##	定义testcase
 ##	1.测试用例
 ##	-------------------------------------------------------------------------------------
-set TESTCASE	testcase_1
-#set TESTCASE	testcase_2
+#set TESTCASE	testcase_000
+#set TESTCASE	testcase_001
+#set TESTCASE	testcase_010
+
+#set TESTCASE	testcase_210
+set TESTCASE	testcase_211
 
 ##	===============================================================================================
 ##	ref ***Do Not Modify Following Parameter!***

@@ -58,9 +58,10 @@ module frame_buffer # (
 	input									i_fval					,	//clk_in时钟域，场有效信号
 	input									i_dval					,	//clk_in时钟域，数据有效信号
 	input									i_leader_flag			,	//clk_in时钟域，头包标志
-	input									i_image_flag			,	//clk_in时钟域，图像标志
-	input									i_chunk_flag			,	//clk_in时钟域，chunk标志
 	input									i_trailer_flag			,	//clk_in时钟域，尾包标志
+	input									i_chunk_flag			,	//clk_in时钟域，chunk标志
+	input									i_image_flag			,	//clk_in时钟域，图像标志
+	input									i_trailer_final_flag	,	//clk_in时钟域，最后一个trailer
 	input	[DATA_WD-1:0]					iv_din					,	//clk_in时钟域，数据输入
 	output									o_front_fifo_overflow	,	//clk_in时钟域，帧存前端FIFO溢出 0:帧存前端FIFO没有溢出 1:帧存前端FIFO出现过溢出的现象
 	//  ===============================================================================================
@@ -69,7 +70,7 @@ module frame_buffer # (
 	input									clk_out					,	//图像输出时钟
 	input									i_buf_rd				,   //clk_out时钟域，后级模块读使能
 	output									o_back_buf_empty		,	//clk_out时钟域，帧存后端FIFO空标志，用来指示帧存中是否有数据可读
-	output	[GPIF_DATA_WD-1:0]				ov_dout					,   //clk_out时钟域，后级FIFO数据输出
+	output	[GPIF_DATA_WD:0]				ov_dout					,   //clk_out时钟域，后级FIFO数据输出
 	//  ===============================================================================================
 	//  帧缓存工作时钟
 	//  ===============================================================================================
@@ -91,7 +92,7 @@ module frame_buffer # (
 	input									i_multi_roi_global_en	,	//Multi-ROI 全局使能
 	input	[MROI_MAX_NUM*REG_WD-1:0]		iv_payload_size_mroi	,	//Multi-ROI payload size 集合
 	input	[MROI_MAX_NUM*REG_WD-1:0]		iv_image_size_mroi		,	//Multi-ROI image size 集合
-	input	[MROI_MAX_NUM*SHORT_REG_WD-1:0]	iv_roi_pic_width		,	//sensor输出图像的总宽度
+	input	[SHORT_REG_WD-1:0]				iv_roi_pic_width		,	//sensor输出图像的总宽度
 	input	[MROI_MAX_NUM*SHORT_REG_WD-1:0]	iv_roi_pic_width_mroi	,	//Multi-ROI pic_width 集合
 	input	[MROI_MAX_NUM*REG_WD-1:0]		iv_start_mroi			,	//Multi-ROI 帧存其实地址 集合
 	//  ===============================================================================================
@@ -301,10 +302,6 @@ module frame_buffer # (
 	//	所有的trailer占用的地址空间，按照 burst byte num(256 byte) 对齐，以byte为单位
 	//	-------------------------------------------------------------------------------------
 	localparam	ALL_TRAILER_ADDR_SIZE			= cdiv(ALL_TRAILER_DATA,MCB_BURST_BYTE_NUM)*MCB_BURST_BYTE_NUM;
-	//	-------------------------------------------------------------------------------------
-	//	trailer addr 计数器的位宽，以byte为单位
-	//	-------------------------------------------------------------------------------------
-	localparam	TRAILER_ADDR_WIDTH				= log2(ALL_TRAILER_DATA+1);
 
 	//	===============================================================================================
 	//	chunk 相关
@@ -332,7 +329,7 @@ module frame_buffer # (
 	//	-------------------------------------------------------------------------------------
 	//	chunk addr 计数器的位宽，以byte为单位
 	//	-------------------------------------------------------------------------------------
-	localparam	CHUNK_ADDR_WIDTH				= log2(ALL_CHUNK_DATA+1);
+	localparam	CHUNK_ADDR_WIDTH				= log2(ALL_LEADER_DATA+ALL_TRAILER_DATA+ALL_CHUNK_DATA+1);
 	//	-------------------------------------------------------------------------------------
 	//	chunk大小的位宽，该计数器用于保存当前chunk的大小
 	//	-------------------------------------------------------------------------------------
@@ -475,6 +472,7 @@ module frame_buffer # (
 	//	-------------------------------------------------------------------------------------
 	wire	[PTR_WIDTH-1:0]						wv_rd_ptr					;	//wrap_rd_logic输出，clk_frame_buf时钟域，读指针
 	wire										w_reading					;	//wrap_rd_logic输出，clk_frame_buf时钟域，正在读
+	wire										w_chunk_mode_active			;	//wrap_rd_logic输出，clk_frame_buf时钟域，经过生效时机控制的
 	wire										w_rd_cmd_en					;	//wrap_rd_logic输出，clk_frame_buf时钟域，mcb rd cmd 使能
 	wire	[2:0]								wv_rd_cmd_instr				;	//wrap_rd_logic输出，clk_frame_buf时钟域，mcb rd cmd 命令
 	wire	[5:0]								wv_rd_cmd_bl				;	//wrap_rd_logic输出，clk_frame_buf时钟域，mcb rd cmd 长度
@@ -518,9 +516,10 @@ module frame_buffer # (
 	.i_fval								(i_fval							),
 	.i_dval								(i_dval							),
 	.i_leader_flag						(i_leader_flag					),
-	.i_image_flag						(i_image_flag					),
-	.i_chunk_flag						(i_chunk_flag					),
 	.i_trailer_flag						(i_trailer_flag					),
+	.i_chunk_flag						(i_chunk_flag					),
+	.i_image_flag						(i_image_flag					),
+	.i_trailer_final_flag				(i_trailer_final_flag			),
 	.iv_din								(iv_din							),
 	.o_front_fifo_overflow				(o_front_fifo_overflow			),
 	.clk								(clk_frame_buf					),
@@ -531,6 +530,7 @@ module frame_buffer # (
 	.iv_rd_ptr							(wv_rd_ptr						),
 	.i_reading							(w_reading						),
 	.o_writing							(w_writing						),
+	.i_chunk_mode_active				(w_chunk_mode_active			),
 	.i_stream_enable					(i_stream_enable				),
 	.iv_frame_depth						(iv_frame_depth[PTR_WIDTH-1:0]	),
 	.ov_frame_depth						(wv_frame_depth					),
@@ -593,6 +593,7 @@ module frame_buffer # (
 	.iv_roi_pic_width					(iv_roi_pic_width					),
 	.iv_roi_pic_width_mroi				(iv_roi_pic_width_mroi				),
 	.iv_start_mroi						(iv_start_mroi						),
+	.i_multi_roi_global_en				(i_multi_roi_global_en				),
 	.clk								(clk_frame_buf						),
 	.reset								(reset_frame_buf					),
 	.iv_wr_ptr							(wv_wr_ptr							),
@@ -600,6 +601,7 @@ module frame_buffer # (
 	.ov_rd_ptr							(wv_rd_ptr							),
 	.i_writing							(w_writing							),
 	.o_reading							(w_reading							),
+	.o_chunk_mode_active				(w_chunk_mode_active				),
 	.i_stream_enable					(i_stream_enable					),
 	.iv_pixel_format					(iv_pixel_format					),
 	.iv_frame_depth						(wv_frame_depth						),

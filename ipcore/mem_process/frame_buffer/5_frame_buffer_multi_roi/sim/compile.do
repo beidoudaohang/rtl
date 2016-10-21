@@ -39,12 +39,16 @@ if {$SIM_MODE == "back" } {
 ##	-------------------------------------------------------------------------------------
 set	global_para		0
 
-set	clock_reset		0
+
 set	frame_buffer	0
 
+set	clock_reset		0
+set	u3v_format		0
+set	rd_back_buf		0
+set	u3_interface	0
+set	gpif_3014		0
 set	mt9p031			0
 set	ddr3			0
-set	gpif_3014		0
 
 
 
@@ -59,12 +63,20 @@ if {$SIM_MODE == "back" } {
 	}
 } else {
 	if {$TB_MODULE == "frame_buffer" } {
-		set	clock_reset		1
 		set	frame_buffer	1
-		set	ddr3			1
-		set	gpif_3014		1
-	} elseif {$TB_MODULE == "clock_reset" } {
 		set	clock_reset		1
+		set	u3v_format		1
+		set	rd_back_buf		1
+		set	mt9p031			1
+		set	ddr3			1
+	} elseif {$TB_MODULE == "fb_gpif" } {
+		set	frame_buffer	1
+		set	clock_reset		1
+		set	u3v_format		1
+		set	u3_interface	1
+		set	gpif_3014		1
+		set	mt9p031			1
+		set	ddr3			1
 	} else {
 		set	ctrl_channel	1
 	}
@@ -142,17 +154,41 @@ if { $ddr3 == 1 } {
 }
 
 ##	-------------------------------------------------------------------------------------
+##	clock_reset 模块
+##	-------------------------------------------------------------------------------------
+if { $clock_reset == 1 } {
+	vlog	+define+TESTCASE=$TESTCASE		../testbench/clock_reset/*.v
+}
+
+##	-------------------------------------------------------------------------------------
+##	u3v_format 模块
+##	-------------------------------------------------------------------------------------
+if { $u3v_format == 1 } {
+	vlog	+define+TESTCASE=$TESTCASE		../testbench/u3v_format/*.v
+	vlog	+define+TESTCASE=$TESTCASE		../testbench/u3v_format/adder/*.v
+}
+
+##	-------------------------------------------------------------------------------------
+##	rd_back_buf 模块
+##	-------------------------------------------------------------------------------------
+if { $clock_reset == 1 } {
+	vlog	+define+TESTCASE=$TESTCASE		../testbench/rd_back_buf/*.v
+}
+
+##	-------------------------------------------------------------------------------------
+##	u3_interface 模块
+##	-------------------------------------------------------------------------------------
+if { $u3_interface == 1 } {
+	vlog	+define+TESTCASE=$TESTCASE		../testbench/u3_interface/*.v
+	vlog	+define+TESTCASE=$TESTCASE		../testbench/u3_interface/u3_transfer/*.v
+	vlog	+define+TESTCASE=$TESTCASE		../testbench/u3_interface/u3_transfer/urb_mult/*.v
+}
+
+##	-------------------------------------------------------------------------------------
 ##	gpif_3014
 ##	-------------------------------------------------------------------------------------
 if { $gpif_3014 == 1 } {
 	vlog	../testbench/gpif_3014/*.v
-}
-
-##	-------------------------------------------------------------------------------------
-##	clock_reset 模块
-##	-------------------------------------------------------------------------------------
-if { $clock_reset == 1 } {
-	vlog		../testbench/clock_reset/*.v
 }
 
 ##	-------------------------------------------------------------------------------------

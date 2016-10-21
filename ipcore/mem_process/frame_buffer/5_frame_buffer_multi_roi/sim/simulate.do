@@ -69,21 +69,23 @@ if { $SIM_MODE == "back" } {
 	#	vcd add /tb_$TB_MODULE/top_frame_buffer_inst/*
 
 } else {
-	if { $TB_MODULE == "mer"} {
+	if { $TB_MODULE == "frame_buffer"} {
 		vsim -t ps -novopt +notimingchecks -L unisims_ver -L secureip -L xilinxcorelib_ver work.glbl harness $TESTCASE\
-		driver_spi_master\
-		driver_hispi\
+		driver_mt9p031\
+		driver_clock_reset\
+		driver_u3v_format\
 		ddr3_model_c3 monitor_ddr3
 
-	} elseif {$TB_MODULE == "deser_hispi"} {
+	} elseif {$TB_MODULE == "fb_gpif"} {
 		vsim -t ps -novopt +notimingchecks -L unisims_ver -L secureip -L xilinxcorelib_ver work.glbl harness $TESTCASE\
-		driver_hispi
+		driver_mt9p031\
+		driver_clock_reset\
+		driver_u3v_format\
+		ddr3_model_c3 monitor_ddr3
+
 	} elseif {$TB_MODULE == "clock_reset"} {
 		vsim -t ps -novopt +notimingchecks -L unisims_ver -L secureip -L xilinxcorelib_ver work.glbl harness $TESTCASE
-	} elseif {$TB_MODULE == "deser_word_align" ||$TB_MODULE == "deser_hispi_if_new"} {
-		vsim -t ps -novopt +notimingchecks -L unisims_ver -L secureip -L xilinxcorelib_ver work.glbl harness $TESTCASE\
-		driver_hispi
-
+	} else {
 	}
 }
 

@@ -137,9 +137,15 @@ module harness ();
 	wire										o_lval_trailer;
 	wire	[GPIF_DATA_WD-1:0]					ov_pix_data;
 
+	//	-------------------------------------------------------------------------------------
+	//	u3 if
+	//	-------------------------------------------------------------------------------------
+	wire	[31:0]						si_payload_transfer_size	;
+	wire	[31:0]						si_payload_transfer_count	;
+	wire	[31:0]						si_payload_final_transfer1_size	;
+	wire	[31:0]						si_payload_final_transfer2_size	;
 
-
-
+	wire								reset_u3_if	;
 	//	ref ARCHITECTURE
 
 	//	-------------------------------------------------------------------------------------
@@ -178,6 +184,11 @@ module harness ();
 	assign	i_bufpll_mcb_lock           = `TESTCASE.i_bufpll_mcb_lock    ;
 
 
+	assign	si_payload_transfer_size		= `TESTCASE.si_payload_transfer_size;
+	assign	si_payload_transfer_count		= `TESTCASE.si_payload_transfer_count;
+	assign	si_payload_final_transfer1_size	= `TESTCASE.si_payload_final_transfer1_size;
+	assign	si_payload_final_transfer2_size	= `TESTCASE.si_payload_final_transfer2_size;
+	assign	reset_u3_if						= `TESTCASE.reset_u3_if;
 
 	//	-------------------------------------------------------------------------------------
 	//	例化 bfm 模块
@@ -271,63 +282,121 @@ module harness ();
 	.mcb1_dram_ck_n				(mcb1_dram_ck_n				)
 	);
 
+
+	wire	[1:0]			ov_usb_fifoaddr	;
+	wire				o_usb_slwr_n	;
+	wire				o_usb_pktend_n	;
+	wire	[31:0]			ov_usb_data	;
+
+	wire				i_usb_flagb_n	;
+
+
+	u3_interface # (
+	.DATA_WD					(32							),
+	.REG_WD						(REG_WD						),
+	.SHORT_REG_WD				(SHORT_REG_WD				),
+	.DMA_SIZE					(16'h2000					),
+	.PACKET_SIZE_WD				(23							),
+	.MROI_MAX_NUM				(MROI_MAX_NUM				)
+	)
+	u3_interface_inst (
+	.clk						(clk_out					),
+	.reset						(reset_u3_if				),
+	.iv_data					(ov_dout					),
+	.i_framebuffer_empty		(o_back_buf_empty		),
+	.o_fifo_rd					(o_rd						),
+	.i_chunkmodeactive			(i_chunk_mode_active		),
+	.iv_transfer_count			(si_payload_transfer_count			),
+	.iv_transfer_size			(si_payload_transfer_size			),
+	.iv_transfer1_size			(si_payload_final_transfer1_size			),
+	.iv_transfer2_size			(si_payload_final_transfer2_size			),
+	.i_multi_roi_total_en		(i_multi_roi_global_en		),
+	.iv_payload_size_mroi		(iv_payload_size_mroi		),
+	.i_usb_flagb				(i_usb_flagb_n				),
+	.ov_usb_fifoaddr			(ov_usb_fifoaddr			),
+	.o_usb_slwr_n				(o_usb_slwr_n				),
+	.ov_usb_data				(ov_usb_data				),
+	.o_usb_pktend_n				(o_usb_pktend_n				)
+	);
+
 	//	-------------------------------------------------------------------------------------
-	//	读后端fifo的逻辑
+	//	3014 gpif 仿真模型
 	//	-------------------------------------------------------------------------------------
-	rd_back_buf # (
-	.MROI_MAX_NUM			(MROI_MAX_NUM			),
-	.REG_WD					(REG_WD					),
-	.DATA_WIDTH				(GPIF_DATA_WD			)
+	slave_fifo # (
+	.SLAVE_DPTH				(16'h2000				)
 	)
-	rd_back_buf_inst (
-	.clk					(clk_out				),
-	.i_stream_enable		(i_stream_enable		),
-	.iv_image_size_mroi		(iv_image_size_mroi		),
-	.i_empty				(o_back_buf_empty		),
-	.iv_pix_data			(ov_dout				),
-	.o_rd					(o_rd					),
-	.o_fval					(o_fval					),
-	.o_lval					(o_lval					),
-	.o_lval_leader			(o_lval_leader			),
-	.o_lval_trailer			(o_lval_trailer			),
-	.ov_pix_data			(ov_pix_data			)
+	slave_fifo_inst(
+	.reset_n				(1'b1					),
+	.i_usb_rd				(1'b1		    		),
+	.iv_usb_addr			(ov_usb_fifoaddr    	),
+	.i_usb_wr				(o_usb_slwr_n	    	),
+	.iv_usb_data			(ov_usb_data	    	),
+	.i_usb_pclk				(!clk_out		    	),
+	.i_usb_pkt				(o_usb_pktend_n	    	),
+	.i_usb_cs				(1'b0		    		),
+	.i_usb_oe				(1'b1		    		),
+	.i_pc_busy				(1'b0					),
+	.o_flaga				(						),
+	.o_flagb				(i_usb_flagb_n			)
 	);
 
-	file_write # (
-	.DATA_WIDTH	(GPIF_DATA_WD			),
-	.FILE_PATH	(FB_FILE_PATH			)
-	)
-	file_write_inst (
-	.clk			(clk_out		),
-	.reset			(1'b0			),
-	.i_fval			(o_fval			),
-	.i_lval			(o_lval			),
-	.iv_din			(ov_pix_data	)
-	);
-
-	file_write # (
-	.DATA_WIDTH	(GPIF_DATA_WD			),
-	.FILE_PATH	(FB_LEADER_FILE_PATH	)
-	)
-	file_write_leader_inst (
-	.clk			(clk_out		),
-	.reset			(1'b0			),
-	.i_fval			(o_fval			),
-	.i_lval			(o_lval_leader	),
-	.iv_din			(ov_pix_data	)
-	);
-
-	file_write # (
-	.DATA_WIDTH	(GPIF_DATA_WD			),
-	.FILE_PATH	(FB_TRAILER_FILE_PATH	)
-	)
-	file_write_trailer_inst (
-	.clk			(clk_out		),
-	.reset			(1'b0			),
-	.i_fval			(o_fval			),
-	.i_lval			(o_lval_trailer	),
-	.iv_din			(ov_pix_data	)
-	);
+//	//	-------------------------------------------------------------------------------------
+//	//	读后端fifo的逻辑
+//	//	-------------------------------------------------------------------------------------
+//	rd_back_buf # (
+//	.MROI_MAX_NUM			(MROI_MAX_NUM			),
+//	.REG_WD					(REG_WD					),
+//	.DATA_WIDTH				(GPIF_DATA_WD			)
+//	)
+//	rd_back_buf_inst (
+//	.clk					(clk_out				),
+//	.i_stream_enable		(i_stream_enable		),
+//	.iv_image_size_mroi		(iv_image_size_mroi		),
+//	.i_empty				(o_back_buf_empty		),
+//	.iv_pix_data			(ov_dout				),
+//	.o_rd					(o_rd					),
+//	.o_fval					(o_fval					),
+//	.o_lval					(o_lval					),
+//	.o_lval_leader			(o_lval_leader			),
+//	.o_lval_trailer			(o_lval_trailer			),
+//	.ov_pix_data			(ov_pix_data			)
+//	);
+//
+//	file_write # (
+//	.DATA_WIDTH	(GPIF_DATA_WD			),
+//	.FILE_PATH	(FB_FILE_PATH			)
+//	)
+//	file_write_inst (
+//	.clk			(clk_out		),
+//	.reset			(1'b0			),
+//	.i_fval			(o_fval			),
+//	.i_lval			(o_lval			),
+//	.iv_din			(ov_pix_data	)
+//	);
+//
+//	file_write # (
+//	.DATA_WIDTH	(GPIF_DATA_WD			),
+//	.FILE_PATH	(FB_LEADER_FILE_PATH	)
+//	)
+//	file_write_leader_inst (
+//	.clk			(clk_out		),
+//	.reset			(1'b0			),
+//	.i_fval			(o_fval			),
+//	.i_lval			(o_lval_leader	),
+//	.iv_din			(ov_pix_data	)
+//	);
+//
+//	file_write # (
+//	.DATA_WIDTH	(GPIF_DATA_WD			),
+//	.FILE_PATH	(FB_TRAILER_FILE_PATH	)
+//	)
+//	file_write_trailer_inst (
+//	.clk			(clk_out		),
+//	.reset			(1'b0			),
+//	.i_fval			(o_fval			),
+//	.i_lval			(o_lval_trailer	),
+//	.iv_din			(ov_pix_data	)
+//	);
 
 	//	-------------------------------------------------------------------------------------
 	//	DDR3 仿真模型

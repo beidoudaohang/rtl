@@ -53,9 +53,10 @@ module wrap_wr_logic # (
 	input							i_fval								,	//场有效信号，高有效，clk_in时钟域,i_fval的上升沿要比i_dval的上升沿提前，i_fval的下降沿要比i_dval的下降沿滞后；i_fval和i_dval上升沿之间要有足够的空隙，最小值是MAX(6*clk_in,6*clk_frame_buf)；i_fval和i_dval下降沿之间要有足够的空隙，最小值是1*clk_in + 7*clk_frame_buf
 	input							i_dval								,	//数据有效信号，高有效，clk_in时钟域，数据有效不向行信号一样连续，可以是断续的信号
 	input							i_leader_flag						,	//头包标志
-	input							i_image_flag						,	//图像标志
-	input							i_chunk_flag						,	//chunk标志
 	input							i_trailer_flag						,	//尾包标志
+	input							i_chunk_flag						,	//chunk标志
+	input							i_image_flag						,	//图像标志
+	input							i_trailer_final_flag				,	//最后一个trailer
 	input	[DATA_WD-1:0]			iv_din								,	//图像数据，64位宽，clk_in时钟域
 	output							o_front_fifo_overflow				,	//帧存前端FIFO溢出 0:帧存前端FIFO没有溢出 1:帧存前端FIFO出现过溢出的现象
 	//	===============================================================================================
@@ -72,6 +73,7 @@ module wrap_wr_logic # (
 	input	[PTR_WIDTH-1 :0]		iv_rd_ptr							,	//读指针,以帧为单位
 	input							i_reading							,	//正在读标志
 	output							o_writing							,	//正在写标志
+	input							i_chunk_mode_active					,	//经过生效时机控制
 	//  -------------------------------------------------------------------------------------
 	//  控制数据
 	//  -------------------------------------------------------------------------------------
@@ -211,13 +213,13 @@ module wrap_wr_logic # (
 	wire								fifo_rd_en			;
 	reg									front_fifo_overflow	= 1'b0;
 	reg									wr_cmd_en			= 1'b0;
-	wire	[WR_ADDR_WIDTH-1:0]				ptr_and_addr_int	;
+	wire	[WR_ADDR_WIDTH-1:0]			ptr_and_addr_int	;
 	wire								fifo_empty			;
 	wire								fifo_prog_empty		;
 	wire	[DATA_WD+4:0]				fifo_dout			;
 
 	reg		[PTR_WIDTH-1:0]				wr_ptr				= 'b0;
-	reg		[WR_ADDR_WIDTH-1:0]				wr_addr				= 'b0;
+	reg		[WR_ADDR_WIDTH-1:0]			wr_addr				= 'b0;
 	reg		[WORD_CNT_WIDTH-1:0]		word_cnt 			= {(WORD_CNT_WIDTH){1'b1}};
 	reg									able_to_write 		= 1'b0;
 	wire								leader_flag			;
@@ -388,14 +390,14 @@ module wrap_wr_logic # (
 	//	fifo 输入数据
 	//	1.fifo输入数据共有69bit，高5bit是flag，低64bit是数据
 	//	-------------------------------------------------------------------------------------
-	assign	fifo_din	= {i_trailer_flag,i_image_flag,i_chunk_flag,i_trailer_flag,i_leader_flag,iv_din};
+	assign	fifo_din	= {i_trailer_final_flag,i_image_flag,i_chunk_flag,i_trailer_flag,i_leader_flag,iv_din};
 
 	//  -------------------------------------------------------------------------------------
 	//  FIFO 读信号
-	//	1.当处在写状态时，如果前级fifo不空，后级fifo不满，开采信号有效，则读信号有效
+	//	1.当处在写状态时，如果前级fifo不空，后级fifo不满，开采信号有效，当前flag有效，则读信号有效
 	//	2.用组合逻辑来做，否则会导致多读出数据
 	//  -------------------------------------------------------------------------------------
-	assign	fifo_rd_en	= (current_state==S_WR) & !fifo_empty & !i_wr_full & stream_enable_reg;
+	assign	fifo_rd_en	= (current_state==S_WR) & !fifo_empty & !i_wr_full & stream_enable_reg & active_flag;
 
 	//	-------------------------------------------------------------------------------------
 	//	帧存前端溢出检测
@@ -441,7 +443,7 @@ module wrap_wr_logic # (
 		//	-------------------------------------------------------------------------------------
 		//	当处于 FLAG 状态时，如果cmd fifo不满，就可以写入一个新的命令
 		//	-------------------------------------------------------------------------------------
-		else if(current_state==S_FLAG && i_wr_cmd_full==1'b0) begin
+		else if(current_state==S_FLAG && i_wr_cmd_full==1'b0 && wr_cmd_en==1'b0) begin
 			wr_cmd_en	<= 1'b1;
 		end
 		else begin
@@ -600,6 +602,12 @@ module wrap_wr_logic # (
 			word_cnt	<= {(WORD_CNT_WIDTH){1'b1}};
 		end
 		//	-------------------------------------------------------------------------------------
+		//	在CMD状态下，如果发现一帧结束了，那么要将word cnt复位。在wr状态，判断是否回idle
+		//	-------------------------------------------------------------------------------------
+		else if(current_state==S_CMD && fifo_empty==1'b1 && fval_shift[1]==1'b0) begin
+			word_cnt	<= {(WORD_CNT_WIDTH){1'b1}};
+		end
+		//	-------------------------------------------------------------------------------------
 		//	其他条件下，每读一次前端fifo，word_cnt自增
 		//	-------------------------------------------------------------------------------------
 		else if(fifo_rd_en==1'b1) begin
@@ -630,7 +638,16 @@ module wrap_wr_logic # (
 			flag_num_cnt	<= 'b0;
 		end
 		else if(active_flag_fall) begin
-			flag_num_cnt	<= flag_num_cnt + 1'b1;
+			//	-------------------------------------------------------------------------------------
+			//	如果chunk没打开 就跳过chunk
+			//	-------------------------------------------------------------------------------------
+			if(i_chunk_mode_active==1'b0 && flag_num_cnt==1) begin
+				flag_num_cnt	<= 3;
+			end
+			else begin
+				flag_num_cnt	<= flag_num_cnt + 1'b1;
+			end
+
 		end
 	end
 
@@ -727,9 +744,9 @@ module wrap_wr_logic # (
 			S_IDLE	:
 			//	-------------------------------------------------------------------------------------
 			//	IDLE -> PTR
-			//	1.开采有效 2.校准完成 3.前端fifo处于可编程空的状态 4.允许写
+			//	1.开采有效 2.校准完成 3.前端fifo不空，说明有数
 			//	-------------------------------------------------------------------------------------
-			if(stream_enable_reg==1'b1 && calib_done_shift[1]==1'b1 && fifo_prog_empty==1'b1) begin
+			if(stream_enable_reg==1'b1 && calib_done_shift[1]==1'b1 && fifo_empty==1'b0) begin
 				next_state	= S_PTR;
 			end
 			else begin

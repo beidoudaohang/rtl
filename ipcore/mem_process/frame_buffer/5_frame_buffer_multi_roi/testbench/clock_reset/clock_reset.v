@@ -43,10 +43,7 @@ module clock_reset # (
 	output 			pll_ce_0			,	//高速片选，只提供给MCB
 	output 			pll_ce_90			,	//高速片选，只提供给MCB
 	output			mcb_drp_clk			,	//calib逻辑时钟，只提供给MCB
-	output			bufpll_mcb_lock		,	//bufpll_mcb 锁定信号，只提供给MCB
-	//frame buf
-	output			clk_frame_buf		,	//帧存时钟，与gpif时钟是同一个源头，为了保证模块独立性，帧存还是使用单独的时钟名称
-	output			reset_frame_buf			//帧存时钟的复位信号，与gpif时钟域的复位信号是同一个源头
+	output			bufpll_mcb_lock			//bufpll_mcb 锁定信号，只提供给MCB
 	);
 
 	//	ref signals
