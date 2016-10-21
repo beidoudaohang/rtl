@@ -1,0 +1,157 @@
+#--  Synopsys, Inc.
+#--  Version J-2015.03
+#--  Project file F:\DAHENG\hw_mer\branches\xinghaotao\u3v\mer-1810-21u3x\fpga_test\trigger_test\synplify\proj_1.prj
+#--  Written on Thu Aug 04 16:25:36 2016
+
+
+#project files
+add_file -verilog "../src/clock_reset/clock_reset.v"
+add_file -verilog "../src/clock_reset/dcm_pix.v"
+add_file -verilog "../src/clock_reset/dcm100.v"
+add_file -verilog "../src/clock_reset/infrastructure.v"
+add_file -verilog "../src/clock_reset/reset_sync.v"
+add_file -verilog "../src/clock_reset/sensor_reset.v"
+add_file -verilog "../src/ctrl_channel/ctrl_channel.v"
+add_file -verilog "../src/ctrl_channel/dna.v"
+add_file -verilog "../src/ctrl_channel/fix_reg_list.v"
+add_file -verilog "../src/ctrl_channel/frame_buf_reg_list.v"
+add_file -verilog "../src/ctrl_channel/gpif_reg_list.v"
+add_file -verilog "../src/ctrl_channel/mer_reg.v"
+add_file -verilog "../src/ctrl_channel/osc_bufg_reg_list.v"
+add_file -verilog "../src/ctrl_channel/pix_reg_list.v"
+add_file -verilog "../src/ctrl_channel/spi_slave.v"
+add_file -verilog "../src/ctrl_channel/timestamp.v"
+add_file -verilog "../src/ctrl_channel/i2c_top/i2c_ctrl.v"
+add_file -verilog "../src/ctrl_channel/i2c_top/i2c_top.v"
+add_file -verilog "../src/ctrl_channel/i2c_top/trigger_cmd_ram/trigger_cmd_ram_w32d32.v"
+add_file -verilog "../src/ctrl_channel/i2c_top/i2c_master_wb_top/i2c_master_bit_ctrl.v"
+add_file -verilog "../src/ctrl_channel/i2c_top/i2c_master_wb_top/i2c_master_byte_ctrl.v"
+add_file -verilog "../src/ctrl_channel/i2c_top/i2c_master_wb_top/i2c_master_registers.v"
+add_file -verilog "../src/ctrl_channel/i2c_top/i2c_master_wb_top/i2c_master_wb_top.v"
+add_file -verilog "../src/ctrl_channel/i2c_top/continuous_cmd_fifo/continuous_cmd_fifo.v"
+add_file -verilog "../src/data_channel/chipscope_top.v"
+add_file -verilog "../src/data_channel/data_align.v"
+add_file -verilog "../src/data_channel/data_channel.v"
+add_file -verilog "../src/data_channel/data_mask.v"
+add_file -verilog "../src/data_channel/interrupt.v"
+add_file -verilog "../src/data_channel/pixelformat_sel.v"
+add_file -verilog "../src/data_channel/pll_reset.v"
+add_file -verilog "../src/data_channel/stream_ctrl.v"
+add_file -verilog "../src/data_channel/test_image.v"
+add_file -verilog "../src/data_channel/width_cut.v"
+add_file -verilog "../src/data_channel/sync_buffer/sync_buffer.v"
+add_file -verilog "../src/data_channel/sync_buffer/fifo_bram/sync_buffer_fifo_bram_w49d64_pe20.v"
+add_file -verilog "../src/data_channel/raw_wb/raw_wb.v"
+add_file -verilog "../src/data_channel/raw_wb/wb_aoi_sel.v"
+add_file -verilog "../src/data_channel/raw_wb/wb_bayer_sel.v"
+add_file -verilog "../src/data_channel/raw_wb/wb_gain.v"
+add_file -verilog "../src/data_channel/raw_wb/wb_statis.v"
+add_file -verilog "../src/data_channel/raw_wb/wb_mult/wb_mult_a17b17p34.v"
+add_file -verilog "../src/data_channel/hispi_if_quick/hispi_if.v"
+add_file -verilog "../src/data_channel/hispi_if_quick/timing_decoder.v"
+add_file -verilog "../src/data_channel/hispi_if_quick/word_aligner.v"
+add_file -verilog "../src/data_channel/hispi_if_quick/word_aligner_top.v"
+add_file -verilog "../src/data_channel/grey_statistics/grey_aoi_sel.v"
+add_file -verilog "../src/data_channel/grey_statistics/grey_statis.v"
+add_file -verilog "../src/data_channel/grey_statistics/grey_statistics.v"
+add_file -verilog "../src/data_channel/deser/deser_clk_gen_bufio2.v"
+add_file -verilog "../src/data_channel/deser/deser_clk_gen_bufpll.v"
+add_file -verilog "../src/data_channel/deser/deser_data.v"
+add_file -verilog "../src/data_channel/deser/deserializer.v"
+add_file -verilog "../src/data_channel/deser/phase_detector.v"
+add_file -verilog "../src/data_channel/binary_counter/binary_counter.v"
+add_file -verilog "../src/data_fix/data_fix.v"
+add_file -verilog "../src/data_fix/change_fifo/change_fifo.v"
+add_file -verilog "../src/frame_buffer/frame_buffer.v"
+add_file -verilog "../src/frame_buffer/wrap_rd_logic.v"
+add_file -verilog "../src/frame_buffer/wrap_wr_logic.v"
+add_file -verilog "../src/frame_buffer/mig_core/ip/mig_core/user_design/rtl/memc_wrapper.v"
+add_file -verilog "../src/frame_buffer/mig_core/ip/mig_core/user_design/rtl/mig_core.v"
+add_file -verilog "../src/frame_buffer/mig_core/ip/mig_core/user_design/rtl/mcb_controller/iodrp_controller.v"
+add_file -verilog "../src/frame_buffer/mig_core/ip/mig_core/user_design/rtl/mcb_controller/iodrp_mcb_controller.v"
+add_file -verilog "../src/frame_buffer/mig_core/ip/mig_core/user_design/rtl/mcb_controller/mcb_raw_wrapper.v"
+add_file -verilog "../src/frame_buffer/mig_core/ip/mig_core/user_design/rtl/mcb_controller/mcb_soft_calibration.v"
+add_file -verilog "../src/frame_buffer/mig_core/ip/mig_core/user_design/rtl/mcb_controller/mcb_soft_calibration_top.v"
+add_file -verilog "../src/frame_buffer/mig_core/ip/mig_core/user_design/rtl/mcb_controller/mcb_ui_top.v"
+add_file -verilog "../src/frame_buffer/fifo_w64d256_pf180_pe6/fifo_w64d256_pf180_pe6.v"
+add_file -verilog "../src/frame_buffer/fifo_w65d256_pf180_pe6/fifo_w65d512_pf430_pe6.v"
+add_file -verilog "../src/io_channel/circuit_dependent.v"
+add_file -verilog "../src/io_channel/filter.v"
+add_file -verilog "../src/io_channel/io_channel.v"
+add_file -verilog "../src/io_channel/led_ctrl.v"
+add_file -verilog "../src/io_channel/line_mode_and_inverter.v"
+add_file -verilog "../src/io_channel/linesource_and_useroutput.v"
+add_file -verilog "../src/io_channel/strobe_filter.v"
+add_file -verilog "../src/io_channel/strobe_mask.v"
+add_file -verilog "../src/io_channel/trigger_active.v"
+add_file -verilog "../src/io_channel/trigger_delay.v"
+add_file -verilog "../src/io_channel/trigger_mask.v"
+add_file -verilog "../src/io_channel/triggersource_sel.v"
+add_file -verilog "../src/u3_interface/packet_switch.v"
+add_file -verilog "../src/u3_interface/u3_interface.v"
+add_file -verilog "../src/u3_interface/u3_transfer/u3_transfer.v"
+add_file -verilog "../src/u3_interface/u3_transfer/urb_mult/urb_mult.v"
+add_file -verilog "../src/u3v_format/u3v_format.v"
+add_file -verilog "../src/u3v_format/adder/u3v_adder_47.v"
+add_file -verilog "../src/mer_1810_21u3x.v"
+
+
+#implementation: "rev_1"
+impl -add rev_1 -type fpga
+
+#
+#implementation attributes
+
+set_option -vlog_std sysv
+set_option -project_relative_includes 1
+set_option -enable_nfilter 1
+
+#device options
+set_option -technology Spartan6
+set_option -part XC6SLX16
+set_option -package FTG256
+set_option -speed_grade -2
+set_option -part_companion ""
+
+#compilation/mapping options
+set_option -use_fsm_explorer 0
+
+# mapper_options
+set_option -frequency auto
+set_option -write_verilog 1
+set_option -write_vhdl 0
+set_option -srs_instrumentation 1
+
+# xilinx_options
+set_option -rw_check_on_ram 1
+
+# Xilinx Spartan3
+set_option -run_prop_extract 1
+set_option -maxfan 10000
+set_option -disable_io_insertion 0
+set_option -pipe 1
+set_option -retiming 0
+set_option -update_models_cp 0
+set_option -fix_gated_and_generated_clocks 1
+set_option -no_sequential_opt 0
+
+# Xilinx Spartan6
+set_option -enable_prepacking 1
+
+# sequential_optimization_options
+set_option -symbolic_fsm_compiler 1
+
+# Compiler Options
+set_option -compiler_compatible 0
+set_option -resource_sharing 1
+set_option -multi_file_compilation_unit 1
+
+# Compiler Options
+set_option -auto_infer_blackbox :%PROD=all_protocert?1:0
+
+#automatic place and route (vendor) options
+set_option -write_apr_constraint 1
+
+#set result format/file last
+project -result_file "./rev_1/proj_1.edf"
+impl -active "rev_1"
